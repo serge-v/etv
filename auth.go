@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -31,15 +32,29 @@ var scope = []string{
 	"com.etvnet.notifications",
 }
 
-func fetch(u string, d interface{}) {
+func fetch(u, cachePath string, d interface{}) {
+	println("=== fetch:", cachePath)
+	buf, err := ioutil.ReadFile(cachePath)
+	if err == nil {
+		if err := json.Unmarshal(buf, d); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
+	log.Println("downloading", u)
 	resp, err := http.Get(u)
 	if err != nil {
 		log.Fatal(err)
 	}
-	buf, err := ioutil.ReadAll(resp.Body)
+	buf, err = ioutil.ReadAll(resp.Body)
 	if *debug {
+		fmt.Fprintln(os.Stderr, u)
 		fmt.Fprintln(os.Stderr, resp.Status)
 		fmt.Println(string(buf))
+	}
+	if err := ioutil.WriteFile(cachePath, buf, 0660); err != nil {
+		log.Fatal(err)
 	}
 	if err := json.Unmarshal(buf, d); err != nil {
 		log.Fatal(err)
@@ -58,7 +73,7 @@ func getActivationCode() {
 		"&scope=" + strings.Join(scope, "%20")
 
 	var resp activationResp
-	fetch(u, &resp)
+	fetch(u, "a.json", &resp)
 	fmt.Printf("%+v\n", resp)
 }
 
@@ -80,13 +95,97 @@ func authorize(deviceCode string) {
 		"&grant_type=http%3A%2F%2Foauth.net%2Fgrant_type%2Fdevice%2F1.0" +
 		"&code=" + deviceCode
 	var resp authorizationResp
-	fetch(u, &resp)
+	fetch(u, "auth.json", &resp)
 }
 
-func getFavorites() {
-	u := apiRoot + "video/bookmarks/items.json?per_page=20&page=1&access_token=" + cfg.AccessToken
-	var resp struct{}
-	fetch(u, &resp)
+const N = 20
+
+func getStreamURL(id int64) {
+	u := fmt.Sprintf("%svideo/media/%d/watch.json?format=%s&protocol=hls&bitrate=%d&access_token=%s", apiRoot, id, "mp4", 800, cfg.AccessToken)
+	var resp StreamURL
+	fetch(u, fmt.Sprintf("url%d.json", id), &resp)
+	fmt.Println("stream:", resp.Data.URL)
+}
+
+func getMovie(id int64, name, indent string, path []string, page int) {
+	num, childPage := getPage(path)
+	println("=== mpath:", path[0], childPage)
+	u := fmt.Sprintf("%svideo/media/%d/children.json?per_page=%d&page=%d&access_token=%s", apiRoot, id, N, page, cfg.AccessToken)
+	var resp Children
+	fetch(u, fmt.Sprintf("m%d-page%d.json", id, page), &resp)
+
+	fmt.Println(">", indent, name, id)
+	for i, c := range resp.Data.Children {
+		if num > 0 {
+			if num == i+1 {
+				if c.ChildrenCount == 0 {
+					fmt.Printf("=================\n%s\n%s, watch: %d\n%s\n", c.Name, c.OnAir, c.WatchStatus, c.Description)
+					if len(path) > 1 && path[1] == "s" {
+						getStreamURL(c.ID)
+					}
+				} else {
+					getMovie(c.ID, c.ShortName, indent+"  ", path[1:], childPage)
+				}
+				break
+			}
+		} else {
+			fmt.Println(i+1, c.OnAir, c.ShortName, c.ChildrenCount, c.WatchStatus)
+		}
+	}
+}
+
+func getPage(path []string) (num, page int) {
+	if len(path) == 0 {
+		return 0, 1
+	}
+	cc := strings.Split(path[0], "p")
+	if len(cc) > 0 {
+		num, _ = strconv.Atoi(cc[0])
+	}
+	if len(cc) > 1 {
+		page, _ = strconv.Atoi(cc[1])
+	}
+	if page == 0 {
+		page = 1
+	}
+	return
+}
+
+func getBookmarks(folder int64, path []string) {
+	movie, page := getPage(path)
+	println("=== path:", path[0], movie, page)
+
+	u := fmt.Sprintf("%svideo/bookmarks/folders/%d/items.json?per_page=20&page=1&access_token=%s", apiRoot, folder, cfg.AccessToken)
+	var resp Bookmarks
+	fetch(u, "b1.json", &resp)
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(resp.ErrorMessage)
+	}
+	p := resp.Data.Pagination
+	fmt.Printf("page: %d/%d\n", p.Page, p.Pages)
+	for i, b := range resp.Data.Bookmarks {
+		if movie > 0 {
+			if movie == i+1 {
+				getMovie(b.ID, b.ShortName, "", path[1:], page)
+			}
+		} else if movie == 0 {
+			fmt.Println(i+1, b.ID, b.OnAir, b.ShortName, b.ChildrenCount)
+		}
+	}
+}
+
+func getFavorites(path []string) {
+	u := fmt.Sprintf("%svideo/bookmarks/folders.json?per_page=20&access_token=%s", apiRoot, cfg.AccessToken)
+	var resp Folders
+	fetch(u, "b.json", &resp)
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(resp.ErrorMessage)
+	}
+	for _, o := range resp.Data.Folders {
+		if o.Title == "serge" {
+			getBookmarks(o.ID, path)
+		}
+	}
 }
 
 type config struct {
@@ -98,6 +197,10 @@ type config struct {
 var debug = flag.Bool("d", false, "debug")
 var getCode = flag.Bool("c", false, "get activation code")
 var auth = flag.String("a", "", "authorize")
+var bookmark = flag.Int("b", 0, "get bookmark `PAGE`")
+var movie = flag.Int("m", 0, "get movie `NUM`")
+var moviePage = flag.Int("mp", 0, "movie `PAGE`")
+var path = flag.String("p", "", "get movie by path like b/m3/p1")
 var cfg config
 
 func main() {
@@ -118,5 +221,13 @@ func main() {
 		authorize(*auth)
 	}
 
-	getFavorites()
+	if *path != "" {
+		pp := strings.Split(*path, "/")
+		if pp[0] == "b" {
+			getFavorites(pp[1:])
+			return
+		}
+	}
+
+	flag.Usage()
 }
