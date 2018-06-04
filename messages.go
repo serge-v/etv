@@ -1,5 +1,6 @@
 package main
 
+// Base contains common fields for every response.
 type Base struct {
 	Error        string      `json:"error"`
 	ErrorCode    interface{} `json:"error_code"`
@@ -9,40 +10,7 @@ type Base struct {
 	StatusCode   int64       `json:"status_code"`
 }
 
-type Bookmark struct {
-	Channel struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
-	} `json:"channel"`
-	ChildrenCount int64  `json:"children_count"`
-	Country       string `json:"country"`
-	DateAdded     string `json:"date_added"`
-	Description   string `json:"description"`
-	Duration      int64  `json:"duration"`
-	Files         []struct {
-		Bitrate int64  `json:"bitrate"`
-		Format  string `json:"format"`
-	} `json:"files"`
-	ID   int64 `json:"id"`
-	IsHd bool  `json:"is_hd"`
-	Mark struct {
-		Count int64 `json:"count"`
-		Total int64 `json:"total"`
-	} `json:"mark"`
-	Name         string `json:"name"`
-	OnAir        string `json:"on_air"`
-	Parent       int64  `json:"parent"`
-	Rating       int64  `json:"rating"`
-	SeriesNum    int64  `json:"series_num"`
-	ShortName    string `json:"short_name"`
-	ShortNameEng string `json:"short_name_eng"`
-	Tag          string `json:"tag"`
-	Thumb        string `json:"thumb"`
-	Type         string `json:"type"`
-	WatchStatus  int64  `json:"watch_status"`
-	Year         int64  `json:"year"`
-}
-
+// Pagination contains paging information for some responses.
 type Pagination struct {
 	Count       int64 `json:"count"`
 	End         int64 `json:"end"`
@@ -54,14 +22,16 @@ type Pagination struct {
 	Start       int64 `json:"start"`
 }
 
+// Bookmarks contains favorites response.
 type Bookmarks struct {
 	Base
 	Data struct {
-		Bookmarks  []Bookmark `json:"bookmarks"`
+		Bookmarks  []Child    `json:"bookmarks"`
 		Pagination Pagination `json:"pagination"`
 	} `json:"data"`
 }
 
+// Folder describes favorites folder.
 type Folder struct {
 	Created    string `json:"created"`
 	ID         int64  `json:"id"`
@@ -69,19 +39,16 @@ type Folder struct {
 	Title      string `json:"title"`
 }
 
+// Folders response.
 type Folders struct {
+	Base
 	Data struct {
 		Folders    []Folder   `json:"folders"`
 		Pagination Pagination `json:"pagination"`
 	} `json:"data"`
-	Error        string      `json:"error"`
-	ErrorCode    interface{} `json:"error_code"`
-	ErrorMessage string      `json:"error_message"`
-	FormErrors   struct{}    `json:"form_errors"`
-	FromCache    interface{} `json:"from_cache"`
-	StatusCode   int64       `json:"status_code"`
 }
 
+// Child is a object or container.
 type Child struct {
 	Channel struct {
 		ID   int64  `json:"id"`
@@ -115,6 +82,7 @@ type Child struct {
 	Year         int64  `json:"year"`
 }
 
+// Children is a generic response.
 type Children struct {
 	Data struct {
 		Children   []Child    `json:"children"`
@@ -128,59 +96,24 @@ type Children struct {
 	StatusCode   int64       `json:"status_code"`
 }
 
+// StreamURL is a response containing media URL.
 type StreamURL struct {
+	Base
 	Data struct {
 		URL string `json:"url"`
 	} `json:"data"`
-	Error        string      `json:"error"`
-	ErrorCode    interface{} `json:"error_code"`
-	ErrorMessage string      `json:"error_message"`
-	FormErrors   struct{}    `json:"form_errors"`
-	FromCache    interface{} `json:"from_cache"`
-	StatusCode   int64       `json:"status_code"`
 }
 
-type Medium struct {
-	Channel struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
-	} `json:"channel"`
-	ChildrenCount int64  `json:"children_count"`
-	Country       string `json:"country"`
-	Description   string `json:"description"`
-	Duration      int64  `json:"duration"`
-	Files         []struct {
-		Bitrate int64  `json:"bitrate"`
-		Format  string `json:"format"`
-	} `json:"files"`
-	ID   int64 `json:"id"`
-	IsHd bool  `json:"is_hd"`
-	Mark struct {
-		Count int64 `json:"count"`
-		Total int64 `json:"total"`
-	} `json:"mark"`
-	Name         string `json:"name"`
-	OnAir        string `json:"on_air"`
-	Parent       int64  `json:"parent"`
-	Rating       int64  `json:"rating"`
-	SeriesNum    int64  `json:"series_num"`
-	ShortName    string `json:"short_name"`
-	ShortNameEng string `json:"short_name_eng"`
-	Tag          string `json:"tag"`
-	Thumb        string `json:"thumb"`
-	Type         string `json:"type"`
-	WatchStatus  int64  `json:"watch_status"`
-	Year         int64  `json:"year"`
-}
-
+// Media response.
 type Media struct {
 	Base
 	Data struct {
-		Media      []Medium   `json:"media"`
+		Media      []Child    `json:"media"`
 		Pagination Pagination `json:"pagination"`
 	} `json:"data"`
 }
 
+// Channels response.
 type Channels struct {
 	Base
 	Data []struct {
