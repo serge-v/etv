@@ -68,18 +68,18 @@ type Child struct {
 		Count int64 `json:"count"`
 		Total int64 `json:"total"`
 	} `json:"mark"`
-	Name         string `json:"name"`
-	OnAir        string `json:"on_air"`
-	Parent       int64  `json:"parent"`
-	Rating       int64  `json:"rating"`
-	SeriesNum    int64  `json:"series_num"`
-	ShortName    string `json:"short_name"`
-	ShortNameEng string `json:"short_name_eng"`
-	Tag          string `json:"tag"`
-	Thumb        string `json:"thumb"`
-	Type         string `json:"type"`
-	WatchStatus  int64  `json:"watch_status"`
-	Year         int64  `json:"year"`
+	Name         string      `json:"name"`
+	OnAir        string      `json:"on_air"`
+	Parent       int64       `json:"parent"`
+	Rating       int64       `json:"rating"`
+	SeriesNum    int64       `json:"series_num"`
+	ShortName    string      `json:"short_name"`
+	ShortNameEng string      `json:"short_name_eng"`
+	Tag          string      `json:"tag"`
+	Thumb        string      `json:"thumb"`
+	Type         string      `json:"type"`
+	WatchStatus  int64       `json:"watch_status"`
+	Year         interface{} `json:"year"`
 }
 
 // Children is a generic response.

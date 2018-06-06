@@ -66,7 +66,7 @@ func checkToken(buf []byte) {
 }
 
 func fetch(u, cachePath string, d interface{}) {
-	// log.Print("fetch:", cachePath)
+	log.Print("fetch:", cachePath)
 	if cachePath != "" {
 		buf, err := ioutil.ReadFile(cachePath)
 		if err == nil {
@@ -81,8 +81,11 @@ func fetch(u, cachePath string, d interface{}) {
 	buf := getURL(u)
 	checkToken(buf)
 
-	if err := ioutil.WriteFile(cachePath, buf, 0660); err != nil {
-		log.Fatal(err)
+	if cachePath != "" {
+		if err := ioutil.WriteFile(cachePath, buf, 0660); err != nil {
+			log.Fatal(err)
+		}
+		log.Print("cached:", cachePath)
 	}
 	if err := json.Unmarshal(buf, d); err != nil {
 		log.Fatal(err)
@@ -101,8 +104,11 @@ func getActivationCode() {
 		"&scope=" + strings.Join(scope, "%20")
 
 	var resp activationResp
-	fetch(u, "a.json", &resp)
-	fmt.Printf("%+v\n", resp)
+	os.Remove("activation.json")
+	fetch(u, "activation.json", &resp)
+	fmt.Printf("Activation code: %s\n", resp.UserCode)
+	fmt.Println("Open http://etvnet.com/device/ and enter activation code.")
+	fmt.Println("Then run: etv -auth")
 }
 
 type authorizationResp struct {
@@ -115,13 +121,16 @@ type authorizationResp struct {
 	TokenType        string `json:"token_type"`
 }
 
-func authorize(deviceCode string) {
+func authorize() {
+	var aresp activationResp
+	fetch("", "activation.json", &aresp)
+
 	u := tokenURL +
 		"?client_id=" + clientID +
 		"&client_secret=" + clientSecret +
 		"&scope=" + strings.Join(scope, "%20") +
 		"&grant_type=http%3A%2F%2Foauth.net%2Fgrant_type%2Fdevice%2F1.0" +
-		"&code=" + deviceCode
+		"&code=" + aresp.DeviceCode
 	var resp authorizationResp
 	fetch(u, "auth.json", &resp)
 }
@@ -138,9 +147,9 @@ func refreshToken() {
 	fetch(u, "", &resp)
 	fmt.Printf("+%v", resp)
 	var newconf = cfg
-	cfg.AccessToken = resp.AccessToken
-	cfg.RefreshToken = resp.RefreshToken
-	cfg.ExpiresIn = resp.ExpiresIn
+	newconf.AccessToken = resp.AccessToken
+	newconf.RefreshToken = resp.RefreshToken
+	newconf.ExpiresIn = resp.ExpiresIn
 	f, err := os.Create("etvrc.tmp")
 	if err != nil {
 		log.Fatal(err)
@@ -149,9 +158,13 @@ func refreshToken() {
 	if err = json.NewEncoder(f).Encode(&newconf); err != nil {
 		log.Fatal(err)
 	}
-
-	log.Println("new config saved to etvrc.tmp")
-
+	if err = os.Rename("etvrc", "etvrc.old"); err != nil {
+		log.Fatal(err)
+	}
+	if err = os.Rename("etvrc.tmp", "etvrc"); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("etvrc updated")
 }
 
 const N = 20
@@ -267,6 +280,9 @@ func getArchive(path []string, page int) {
 	fmt.Printf("%d/%d\n", pg.Page, pg.Pages)
 	for i, c := range resp.Data.Media {
 		if num == 0 {
+			if c.Tag == "худ. фильм" {
+				c.Tag = "х.ф."
+			}
 			fmt.Printf("%2d %s %4d %d %-30s %-16s %s\n", i+1, c.OnAir, c.ChildrenCount, c.WatchStatus,
 				fmt.Sprintf("%s:%d", c.Channel.Name, c.Channel.ID), c.Tag, c.ShortName)
 			continue
@@ -301,8 +317,11 @@ func getChannel(id int64, name string, path []string, page int) {
 	fmt.Printf("%d/%d\n", pg.Page, pg.Pages)
 	for i, c := range resp.Data.Media {
 		if num == 0 {
-			fmt.Printf("%2d %s %4d %d %-30s %-16s %s\n", i+1, c.OnAir, c.ChildrenCount, c.WatchStatus,
-				fmt.Sprintf("%s:%d", c.Channel.Name, c.Channel.ID), c.Tag, c.ShortName)
+			if c.Tag == "худ. фильм" {
+				c.Tag = "х.ф."
+			}
+			fmt.Printf("%2d %s %4d %4d %d %-24s %s. %s, %s, %v\n", i+1, c.OnAir, c.Rating, c.ChildrenCount, c.WatchStatus,
+				c.Channel.Name, c.ShortName, c.Tag, c.Country, c.Year)
 			continue
 		}
 		if num != i+1 {
@@ -344,6 +363,43 @@ func getChannels(path []string, page int) {
 	}
 }
 
+func getHistory(path []string, page int) {
+	num, childPage := getPage(path)
+	u := fmt.Sprintf("%svideo/media/history.json?per_page=20&page=%d&access_token=%s", apiRoot, page, cfg.AccessToken)
+	var resp Media
+	fetch(u, fmt.Sprintf("history-%d.json", page), &resp)
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(resp.ErrorMessage)
+	}
+	pg := resp.Data.Pagination
+	fmt.Printf("%d/%d\n", pg.Page, pg.Pages)
+	for i, c := range resp.Data.Media {
+		if num == 0 {
+			if c.Tag == "худ. фильм" {
+				c.Tag = "х.ф."
+			}
+			fmt.Printf("%2d %s %4d %4d %d %-24s %s. %s, %s, %v\n", i+1, c.OnAir, c.Rating, c.ChildrenCount, c.WatchStatus,
+				c.Channel.Name, c.ShortName, c.Tag, c.Country, c.Year)
+			continue
+		}
+		if num != i+1 {
+			continue
+		}
+
+		if c.ChildrenCount == 0 {
+			fmt.Printf("=================\n%s\n%s, watch: %d\n%s\n", c.Name, c.OnAir, c.WatchStatus, c.Description)
+			if len(path) > 1 && path[1] == "s" {
+				u := getStreamURL(c.ID)
+				startPlayer(u)
+			}
+			return
+		}
+		getMovie(c.ID, c.ShortName, "", path[1:], childPage)
+		break
+	}
+}
+
 type config struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int64  `json:"expires_in"`
@@ -351,15 +407,27 @@ type config struct {
 }
 
 var debug = flag.Bool("d", false, "debug")
-var getCode = flag.Bool("code", false, "get activation code")
+var getCode = flag.Bool("code", false, "get activation code from etvnet.com")
 var refresh = flag.Bool("r", false, "refresh token")
-var auth = flag.String("auth", "", "authorize")
-var path = flag.String("p", "", "get movie by path like b/m3/p1")
+var auth = flag.Bool("auth", false, "authorize after entering activation code")
+var path = flag.String("p", "", "get movie by `path`")
+
 var cfg config
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.Parse()
+
+	if *getCode {
+		getActivationCode()
+		return
+	}
+
+	if *auth {
+		authorize()
+		return
+	}
+
 	f, err := os.Open("etvrc")
 	if err != nil {
 		log.Fatal(err)
@@ -368,14 +436,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *getCode {
-		getActivationCode()
-		return
-	}
-	if *auth != "" {
-		authorize(*auth)
-		return
-	}
 	if *refresh {
 		refreshToken()
 		return
@@ -393,6 +453,10 @@ func main() {
 		} else if pp[0][0] == 'c' {
 			_, page := getPage(pp)
 			getChannels(pp[1:], page)
+			return
+		} else if pp[0][0] == 'h' {
+			_, page := getPage(pp)
+			getHistory(pp[1:], page)
 			return
 		}
 	}
