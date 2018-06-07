@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strconv"
@@ -123,6 +124,7 @@ type authorizationResp struct {
 
 func authorize() {
 	var aresp activationResp
+	os.Remove("auth.json")
 	fetch("", "activation.json", &aresp)
 
 	u := tokenURL +
@@ -132,7 +134,27 @@ func authorize() {
 		"&grant_type=http%3A%2F%2Foauth.net%2Fgrant_type%2Fdevice%2F1.0" +
 		"&code=" + aresp.DeviceCode
 	var resp authorizationResp
-	fetch(u, "auth.json", &resp)
+	fetch(u, "", &resp)
+	fmt.Printf("+%v", resp)
+	var newconf = cfg
+	newconf.AccessToken = resp.AccessToken
+	newconf.RefreshToken = resp.RefreshToken
+	newconf.ExpiresIn = resp.ExpiresIn
+	f, err := os.Create("etvrc.tmp")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	if err = json.NewEncoder(f).Encode(&newconf); err != nil {
+		log.Fatal(err)
+	}
+	if err = os.Rename("etvrc", "etvrc.old"); err != nil {
+		log.Fatal(err)
+	}
+	if err = os.Rename("etvrc.tmp", "etvrc"); err != nil {
+		log.Fatal(err)
+	}
+	log.Println("etvrc updated")
 }
 
 func refreshToken() {
@@ -242,7 +264,9 @@ func getBookmarks(folder int64, path []string) {
 		log.Fatal(resp.ErrorMessage)
 	}
 	p := resp.Data.Pagination
-	fmt.Printf("page: %d/%d\n", p.Page, p.Pages)
+	if movie == 0 {
+		fmt.Printf("page %d of %d\n", p.Page, p.Pages)
+	}
 	for i, b := range resp.Data.Bookmarks {
 		if movie > 0 {
 			if movie == i+1 {
@@ -373,7 +397,9 @@ func getHistory(path []string, page int) {
 		log.Fatal(resp.ErrorMessage)
 	}
 	pg := resp.Data.Pagination
-	fmt.Printf("%d/%d\n", pg.Page, pg.Pages)
+	if num == 0 {
+		fmt.Printf("page %d of %d\n", pg.Page, pg.Pages)
+	}
 	for i, c := range resp.Data.Media {
 		if num == 0 {
 			if c.Tag == "худ. фильм" {
@@ -400,6 +426,40 @@ func getHistory(path []string, page int) {
 	}
 }
 
+func search(page int, query string, num int, play bool) {
+	u := fmt.Sprintf("%svideo/media/search.json?per_page=20&page=%d&access_token=%s&q=%s", apiRoot, page, cfg.AccessToken, url.QueryEscape(query))
+	var resp Media
+	fetch(u, "", &resp)
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(resp.ErrorMessage)
+	}
+	pg := resp.Data.Pagination
+	fmt.Printf("page %d of %d\n", pg.Page, pg.Pages)
+	for i, c := range resp.Data.Media {
+		if num == 0 {
+			if c.Tag == "худ. фильм" {
+				c.Tag = "х.ф."
+			}
+			fmt.Printf("%2d %s %4d %4d %d %-24s %s. %s, %s, %v\n", i+1, c.OnAir, c.Rating, c.ChildrenCount, c.WatchStatus,
+				c.Channel.Name, c.ShortName, c.Tag, c.Country, c.Year)
+			continue
+		}
+		if num != i+1 {
+			continue
+		}
+
+		if c.ChildrenCount == 0 {
+			fmt.Printf("=================\n%s\n%s, watch: %d\n%s\n", c.Name, c.OnAir, c.WatchStatus, c.Description)
+			if play {
+				u := getStreamURL(c.ID)
+				startPlayer(u)
+			}
+			return
+		}
+		break
+	}
+}
+
 type config struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int64  `json:"expires_in"`
@@ -410,21 +470,25 @@ var debug = flag.Bool("d", false, "debug")
 var getCode = flag.Bool("code", false, "get activation code from etvnet.com")
 var refresh = flag.Bool("r", false, "refresh token")
 var auth = flag.Bool("auth", false, "authorize after entering activation code")
-var path = flag.String("p", "", "get movie by `path`")
+var path = flag.String("path", "", "get movie by `path` [abch][p]/num/... : [archive,bookmarks,channels,history][pPAGE]/NUM")
+var query = flag.String("s", "", "search by keyword")
+var page = flag.Int("p", 1, "page number")
+var num = flag.Int("n", 0, "movie number")
+var play = flag.Bool("play", false, "start player")
 
 var cfg config
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.Parse()
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	if *debug {
+		log.SetOutput(os.Stderr)
+	} else {
+		log.SetOutput(ioutil.Discard)
+	}
 
 	if *getCode {
 		getActivationCode()
-		return
-	}
-
-	if *auth {
-		authorize()
 		return
 	}
 
@@ -434,6 +498,11 @@ func main() {
 	}
 	if err = json.NewDecoder(f).Decode(&cfg); err != nil {
 		log.Fatal(err)
+	}
+
+	if *auth {
+		authorize()
+		return
 	}
 
 	if *refresh {
@@ -459,6 +528,12 @@ func main() {
 			getHistory(pp[1:], page)
 			return
 		}
+		return
+	}
+
+	if *query != "" {
+		search(*page, *query, *num, *play)
+		return
 	}
 
 	flag.Usage()
