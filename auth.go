@@ -58,7 +58,7 @@ func checkToken(buf []byte) {
 		log.Fatal(err, string(buf))
 	}
 	if base.Error == "invalid_token" {
-		log.Fatal("Refresh token.")
+		panic("Refresh token.")
 		return
 	}
 	if base.Error != "" {
@@ -207,20 +207,14 @@ func startPlayer(u string) {
 	}
 }
 
-func getMovie(id int64, name, indent string, path []string, page int) {
-	num, childPage := getPage(path)
-	u := fmt.Sprintf("%svideo/media/%d/children.json?per_page=%d&page=%d&access_token=%s", apiRoot, id, N, page, cfg.AccessToken)
-	var resp Children
-	fetch(u, fmt.Sprintf("m%d-page%d.json", id, page), &resp)
-
-	fmt.Println(">", indent, name, id)
-	for i, c := range resp.Data.Children {
-		if num == 0 {
-			fmt.Printf("%2d %s %4d %d %-20s\n", i+1, c.OnAir, c.ChildrenCount, c.WatchStatus, c.ShortName)
+func walkChildren(selected, childPage int, children []Child, path []string, indent string) {
+	for i, c := range children {
+		if selected == 0 {
+			printChild(i+1, c)
 			continue
 		}
 
-		if num != i+1 {
+		if selected != i+1 {
 			continue
 		}
 
@@ -237,11 +231,21 @@ func getMovie(id int64, name, indent string, path []string, page int) {
 	}
 }
 
+func getMovie(id int64, name, indent string, path []string, page int) {
+	num, childPage := getPage(path)
+	u := fmt.Sprintf("%svideo/media/%d/children.json?per_page=%d&page=%d&access_token=%s", apiRoot, id, N, page, cfg.AccessToken)
+	var resp Children
+	fetch(u, fmt.Sprintf("m%d-page%d.json", id, page), &resp)
+
+	fmt.Println(">", indent, name, id)
+	walkChildren(num, childPage, resp.Data.Children, path, indent)
+}
+
 func getPage(path []string) (num, page int) {
 	if len(path) == 0 {
 		return 0, 1
 	}
-	cc := strings.Split(path[0], "p")
+	cc := strings.Split(path[0], ",")
 	if len(cc) > 0 {
 		num, _ = strconv.Atoi(cc[0])
 	}
@@ -255,8 +259,7 @@ func getPage(path []string) (num, page int) {
 }
 
 func getBookmarks(folder int64, path []string) {
-	movie, page := getPage(path)
-
+	num, childPage := getPage(path)
 	u := fmt.Sprintf("%svideo/bookmarks/folders/%d/items.json?per_page=20&page=1&access_token=%s", apiRoot, folder, cfg.AccessToken)
 	var resp Bookmarks
 	fetch(u, "b1.json", &resp)
@@ -264,18 +267,10 @@ func getBookmarks(folder int64, path []string) {
 		log.Fatal(resp.ErrorMessage)
 	}
 	p := resp.Data.Pagination
-	if movie == 0 {
+	if num == 0 {
 		fmt.Printf("page %d of %d\n", p.Page, p.Pages)
 	}
-	for i, b := range resp.Data.Bookmarks {
-		if movie > 0 {
-			if movie == i+1 {
-				getMovie(b.ID, b.ShortName, "", path[1:], page)
-			}
-		} else if movie == 0 {
-			fmt.Println(i+1, b.ID, b.OnAir, b.ShortName, b.ChildrenCount)
-		}
-	}
+	walkChildren(num, childPage, resp.Data.Bookmarks, path, "")
 }
 
 func getFavorites(path []string) {
@@ -292,6 +287,14 @@ func getFavorites(path []string) {
 	}
 }
 
+func printChild(n int, c Child) {
+	if c.Tag == "худ. фильм" {
+		c.Tag = "х.ф."
+	}
+	fmt.Printf("%2d %s %4d %4d %d %-24s %s. %s, %s, %v\n", n, c.OnAir, c.Rating, c.ChildrenCount, c.WatchStatus,
+		c.Channel.Name, c.ShortName, c.Tag, c.Country, c.Year)
+}
+
 func getArchive(path []string, page int) {
 	num, childPage := getPage(path)
 	u := fmt.Sprintf("%svideo/media/archive.json?per_page=20&page=%d&access_token=%s", apiRoot, page, cfg.AccessToken)
@@ -301,31 +304,8 @@ func getArchive(path []string, page int) {
 		log.Fatal(resp.ErrorMessage)
 	}
 	pg := resp.Data.Pagination
-	fmt.Printf("%d/%d\n", pg.Page, pg.Pages)
-	for i, c := range resp.Data.Media {
-		if num == 0 {
-			if c.Tag == "худ. фильм" {
-				c.Tag = "х.ф."
-			}
-			fmt.Printf("%2d %s %4d %d %-30s %-16s %s\n", i+1, c.OnAir, c.ChildrenCount, c.WatchStatus,
-				fmt.Sprintf("%s:%d", c.Channel.Name, c.Channel.ID), c.Tag, c.ShortName)
-			continue
-		}
-		if num != i+1 {
-			continue
-		}
-
-		if c.ChildrenCount == 0 {
-			fmt.Printf("=================\n%s\n%s, watch: %d\n%s\n", c.Name, c.OnAir, c.WatchStatus, c.Description)
-			if len(path) > 1 && path[1] == "s" {
-				u := getStreamURL(c.ID)
-				startPlayer(u)
-			}
-			return
-		}
-		getMovie(c.ID, c.ShortName, "", path[1:], childPage)
-		break
-	}
+	fmt.Printf("archive, page %d of %d\n", pg.Page, pg.Pages)
+	walkChildren(num, childPage, resp.Data.Media, path, "")
 }
 
 func getChannel(id int64, name string, path []string, page int) {
@@ -338,31 +318,8 @@ func getChannel(id int64, name string, path []string, page int) {
 		log.Fatal(resp.ErrorMessage)
 	}
 	pg := resp.Data.Pagination
-	fmt.Printf("%d/%d\n", pg.Page, pg.Pages)
-	for i, c := range resp.Data.Media {
-		if num == 0 {
-			if c.Tag == "худ. фильм" {
-				c.Tag = "х.ф."
-			}
-			fmt.Printf("%2d %s %4d %4d %d %-24s %s. %s, %s, %v\n", i+1, c.OnAir, c.Rating, c.ChildrenCount, c.WatchStatus,
-				c.Channel.Name, c.ShortName, c.Tag, c.Country, c.Year)
-			continue
-		}
-		if num != i+1 {
-			continue
-		}
-
-		if c.ChildrenCount == 0 {
-			fmt.Printf("=================\n%s\n%s, watch: %d\n%s\n", c.Name, c.OnAir, c.WatchStatus, c.Description)
-			if len(path) > 1 && path[1] == "s" {
-				u := getStreamURL(c.ID)
-				startPlayer(u)
-			}
-			return
-		}
-		getMovie(c.ID, c.ShortName, "", path[1:], childPage)
-		break
-	}
+	fmt.Printf("channel %s, page %d of %d\n", name, pg.Page, pg.Pages)
+	walkChildren(num, childPage, resp.Data.Media, path, "")
 }
 
 func getChannels(path []string, page int) {
@@ -398,66 +355,22 @@ func getHistory(path []string, page int) {
 	}
 	pg := resp.Data.Pagination
 	if num == 0 {
-		fmt.Printf("page %d of %d\n", pg.Page, pg.Pages)
+		fmt.Printf("history, page %d of %d\n", pg.Page, pg.Pages)
 	}
-	for i, c := range resp.Data.Media {
-		if num == 0 {
-			if c.Tag == "худ. фильм" {
-				c.Tag = "х.ф."
-			}
-			fmt.Printf("%2d %s %4d %4d %d %-24s %s. %s, %s, %v\n", i+1, c.OnAir, c.Rating, c.ChildrenCount, c.WatchStatus,
-				c.Channel.Name, c.ShortName, c.Tag, c.Country, c.Year)
-			continue
-		}
-		if num != i+1 {
-			continue
-		}
-
-		if c.ChildrenCount == 0 {
-			fmt.Printf("=================\n%s\n%s, watch: %d\n%s\n", c.Name, c.OnAir, c.WatchStatus, c.Description)
-			if len(path) > 1 && path[1] == "s" {
-				u := getStreamURL(c.ID)
-				startPlayer(u)
-			}
-			return
-		}
-		getMovie(c.ID, c.ShortName, "", path[1:], childPage)
-		break
-	}
+	walkChildren(num, childPage, resp.Data.Media, path, "")
 }
 
-func search(page int, query string, num int, play bool) {
+func search(query string, page int, path []string) {
+	num, childPage := getPage(path)
 	u := fmt.Sprintf("%svideo/media/search.json?per_page=20&page=%d&access_token=%s&q=%s", apiRoot, page, cfg.AccessToken, url.QueryEscape(query))
 	var resp Media
-	fetch(u, "", &resp)
+	fetch(u, fmt.Sprintf("search-%s.json", query), &resp)
 	if resp.StatusCode != http.StatusOK {
 		log.Fatal(resp.ErrorMessage)
 	}
 	pg := resp.Data.Pagination
-	fmt.Printf("page %d of %d\n", pg.Page, pg.Pages)
-	for i, c := range resp.Data.Media {
-		if num == 0 {
-			if c.Tag == "худ. фильм" {
-				c.Tag = "х.ф."
-			}
-			fmt.Printf("%2d %s %4d %4d %d %-24s %s. %s, %s, %v\n", i+1, c.OnAir, c.Rating, c.ChildrenCount, c.WatchStatus,
-				c.Channel.Name, c.ShortName, c.Tag, c.Country, c.Year)
-			continue
-		}
-		if num != i+1 {
-			continue
-		}
-
-		if c.ChildrenCount == 0 {
-			fmt.Printf("=================\n%s\n%s, watch: %d\n%s\n", c.Name, c.OnAir, c.WatchStatus, c.Description)
-			if play {
-				u := getStreamURL(c.ID)
-				startPlayer(u)
-			}
-			return
-		}
-		break
-	}
+	fmt.Printf("search, page %d of %d\n", pg.Page, pg.Pages)
+	walkChildren(num, childPage, resp.Data.Media, path, "")
 }
 
 type config struct {
@@ -471,11 +384,10 @@ var getCode = flag.Bool("code", false, "get activation code from etvnet.com")
 var refresh = flag.Bool("r", false, "refresh token")
 var auth = flag.Bool("auth", false, "authorize after entering activation code")
 var path = flag.String("path", "", "get movie by `path` [abch][p]/num/... : [archive,bookmarks,channels,history][pPAGE]/NUM")
-var query = flag.String("s", "", "search by keyword")
 var page = flag.Int("p", 1, "page number")
 var num = flag.Int("n", 0, "movie number")
 var play = flag.Bool("play", false, "start player")
-
+var query = flag.String("q", "", "specify query for -path q request")
 var cfg config
 
 func main() {
@@ -519,6 +431,13 @@ func main() {
 			_, page := getPage(pp)
 			getArchive(pp[1:], page)
 			return
+		} else if pp[0][0] == 'q' {
+			if *query == "" {
+				panic("-q parameter required")
+			}
+			_, page := getPage(pp)
+			search(*query, page, pp[1:])
+			return
 		} else if pp[0][0] == 'c' {
 			_, page := getPage(pp)
 			getChannels(pp[1:], page)
@@ -528,11 +447,6 @@ func main() {
 			getHistory(pp[1:], page)
 			return
 		}
-		return
-	}
-
-	if *query != "" {
-		search(*page, *query, *num, *play)
 		return
 	}
 
