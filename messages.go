@@ -1,5 +1,20 @@
 package main
 
+type activationResp struct {
+	DeviceCode string `json:"device_code"`
+	UserCode   string `json:"user_code"`
+}
+
+type authorizationResp struct {
+	Error            string `json:"error"`
+	ErrorDescription string `json:"error_description"`
+	AccessToken      string `json:"access_token"`
+	ExpiresIn        int64  `json:"expires_in"`
+	RefreshToken     string `json:"refresh_token"`
+	Scope            string `json:"scope"`
+	TokenType        string `json:"token_type"`
+}
+
 // Base contains common fields for every response.
 type Base struct {
 	Error        string      `json:"error"`
@@ -113,11 +128,13 @@ type Media struct {
 	} `json:"data"`
 }
 
+type Channel struct {
+	ID   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
 // Channels response.
 type Channels struct {
 	Base
-	Data []struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
-	} `json:"data"`
+	Data []Channel `json:"data"`
 }

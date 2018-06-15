@@ -1,0 +1,57 @@
+{{define "main"}}
+{{template "header"}}
+<table>
+	<tr><td><a class="button" href="/bookmarks">bookmarks</a></td></tr>
+	<tr><td><a class="button" href="/channels">channels</a></td></tr>
+	<tr><td><a class="button" href="/archive">archive</a></td></tr>
+	<tr><td><a class="button" href="/search">search</a></td></tr>
+</table>
+{{template "footer"}}
+{{end}}
+
+{{define "activation"}}
+{{template "header"}}
+<h2>Activation</h2>
+To activate the box enter go to <a href="http://etvnet.com/activate">etvnet activation page</a><br>
+and enter the code:<br>
+<h3>{{.Code}}</h3>
+<a class="button" href="/authorize">Code entered</a><br>
+<a class="button" href="/">Cancel</a><br>
+{{template "footer"}}
+{{end}}
+
+{{define "bookmarks"}}
+{{template "header"}}
+<h1>Bookmarks</h1>
+<table>
+	{{range .List}}
+	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.OnAir}}</a></td></tr>
+	{{end}}
+</table>
+{{template "footer"}}
+{{end}}
+
+{{define "items"}}
+{{template "header"}}
+<table>
+	{{range .List}}
+	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
+	{{end}}
+</table>
+{{template "footer"}}
+{{end}}
+
+{{define "movie"}}
+{{template "header"}}
+	<h1>{{.Name}}</h1>
+	<h3>{{.Country}} {{.Year}}</h3>
+	<h3>{{.OnAir}}</h3>
+	<h3>{{.Tag}}</h3>
+	<a class="button" href="/play/?id={{.ID}}">Play</a>
+	<br>
+	<br>
+	<img src="{{.Thumb}}">
+	<div class="pre">{{.Description}}</div>
+{{template "footer"}}
+{{end}}
+
