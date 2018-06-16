@@ -6,6 +6,7 @@
 	<tr><td><a class="button" href="/archive">archive</a></td></tr>
 	<tr><td><a class="button" href="/search">search</a></td></tr>
 </table>
+version: {{.Version}}
 {{template "footer"}}
 {{end}}
 
@@ -36,6 +37,7 @@ and enter the code:<br>
 <table>
 	{{range .List}}
 	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
+	<tr><td>{{.WatchStatus}}</td></tr>
 	{{end}}
 </table>
 {{template "footer"}}

@@ -16,7 +16,10 @@ const stampZ = "2006-01-02 15:04:05Z"
 
 func mainPage(w http.ResponseWriter, r *http.Request) error {
 	d := struct {
-	}{}
+		Version string
+	}{
+		Version: version,
+	}
 
 	if err := uiT.ExecuteTemplate(w, "main", d); err != nil {
 		return err
@@ -113,6 +116,10 @@ func bookmarksPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+func historyPage(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
 func channelPage(w http.ResponseWriter, r *http.Request) error {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 2 {
@@ -139,7 +146,26 @@ func channelPage(w http.ResponseWriter, r *http.Request) error {
 }
 
 func searchPage(w http.ResponseWriter, r *http.Request) error {
-	if err := uiT.ExecuteTemplate(w, "search", nil); err != nil {
+	q := r.URL.Query().Get("q")
+	if q == "" {
+		if err := uiT.ExecuteTemplate(w, "search", nil); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	var d struct {
+		List []Child
+	}
+
+	ch, err := search(q, 1)
+	if err != nil {
+		return err
+	}
+
+	d.List = ch.Data.Media
+
+	if err := uiT.ExecuteTemplate(w, "items", d); err != nil {
 		return err
 	}
 	return nil
@@ -209,11 +235,6 @@ func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Han
 				log.Println(err)
 				return
 			}
-			if *debug {
-				for _, t := range uiT.Templates() {
-					log.Printf("loaded: %s\n", t.Name())
-				}
-			}
 		}
 		f, err := os.Open("etvrc")
 		if err == nil {
@@ -224,12 +245,12 @@ func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Han
 			log.Println("config error", err)
 		}
 		if err := h(w, r); err != nil {
+			log.Println("error:", err)
 			if err == ErrInvalidGrant {
 				http.Redirect(w, r, "/activate", http.StatusFound)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Println(err)
 			return
 		}
 	}
@@ -239,6 +260,7 @@ func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Han
 func runServer() error {
 	http.Handle("/", errorHandler(mainPage))
 	http.Handle("/bookmarks/", errorHandler(bookmarksPage))
+	http.Handle("/history/", errorHandler(historyPage))
 	http.Handle("/channels/", errorHandler(channelsPage))
 	http.Handle("/channel/", errorHandler(channelPage))
 	http.Handle("/search/", errorHandler(searchPage))

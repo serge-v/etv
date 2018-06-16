@@ -1,8 +1,8 @@
 {{template "header"}}
-<form method="POST" action="/search/">
+<form method="GET" action="/search/">
 <table>
-	<tr><td>
-	</td></tr>
+	<tr><td><input class="qfield" type="text" name="q"></td></tr>
+	<tr><td><input class="button" type="submit" value="Search"></td></tr>
 </table>
 </form>
 {{template "footer"}}

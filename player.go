@@ -40,11 +40,9 @@ func newPlayer() *videoPlayer {
 
 	if len(p.fifoName) > 0 {
 		cmd := exec.Command("mkfifo", p.fifoName)
-		log.Println("create fifo")
 		if err = cmd.Run(); err != nil {
 			log.Println("mkfifo:", err.Error())
 		}
-		log.Println("fifo created")
 	}
 
 	return p

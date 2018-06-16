@@ -7,8 +7,10 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
+	"time"
 )
 
 const (
@@ -31,16 +33,16 @@ var scope = []string{
 	"com.etvnet.notifications",
 }
 
+const bitrate = 400
+
 func getURL(u string) ([]byte, error) {
 	log.Println("downloading url:", u)
 	resp, err := http.Get(u)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println(err)
 		return nil, err
 	}
 	if *debug {
@@ -73,8 +75,15 @@ func checkToken(buf []byte) error {
 }
 
 func fetch(u, cachePath string, d interface{}) error {
+	fname := cacheDir + cachePath
+	fi, err := os.Stat(fname)
+	maxTime := time.Now().Add(-30 * time.Second)
+	if err == nil && fi.ModTime().Before(maxTime) {
+		os.Remove(fname)
+		cachePath = ""
+	}
 	if cachePath != "" {
-		buf, err := ioutil.ReadFile(cachePath)
+		buf, err := ioutil.ReadFile(fname)
 		if err == nil {
 			err = checkToken(buf)
 			if err == ErrInvalidToken {
@@ -95,6 +104,7 @@ func fetch(u, cachePath string, d interface{}) error {
 
 	buf, err := getURL(u)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	err = checkToken(buf)
@@ -108,7 +118,7 @@ func fetch(u, cachePath string, d interface{}) error {
 	}
 
 	if cachePath != "" {
-		if err := ioutil.WriteFile(cachePath, buf, 0660); err != nil {
+		if err := ioutil.WriteFile(fname, buf, 0600); err != nil {
 			log.Println(err)
 			return err
 		}
@@ -164,9 +174,12 @@ func getMyFavorites() (*Bookmarks, error) {
 func getChannels() (*Channels, error) {
 	u := fmt.Sprintf("%svideo/channels.json?per_page=20&page=%d&access_token=%s", apiRoot, 1, cfg.AccessToken)
 	var resp Channels
-	fetch(u, fmt.Sprintf("channels-%d.json", page), &resp)
+	if err := fetch(u, fmt.Sprintf("channels-%d.json", page), &resp); err != nil {
+		log.Println(u, err)
+		return nil, err
+	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.ErrorMessage)
+		return nil, fmt.Errorf("%+v", resp)
 	}
 	return &resp, nil
 }
@@ -199,6 +212,9 @@ func getChildren(id int64, page int) (*Children, error) {
 	if err := fetch(u, fmt.Sprintf("m%d-page%d.json", id, page), &resp); err != nil {
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.ErrorMessage)
+	}
 	lock.Lock()
 	for _, c := range resp.Data.Children {
 		if c.Type == "MediaObject" {
@@ -214,6 +230,9 @@ func getArchive(page int) (*Media, error) {
 	var resp Media
 	if err := fetch(u, fmt.Sprintf("archive-%d.json", page), &resp); err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.ErrorMessage)
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.Fatal(resp.ErrorMessage)
@@ -240,8 +259,46 @@ func getStreamURL(id int64) (string, error) {
 	if err := fetch(u, fmt.Sprintf("url%d.json", id), &resp); err != nil {
 		return "", err
 	}
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New(resp.ErrorMessage)
+	}
 	if *debug {
 		log.Println("stream:", resp.Data.URL)
 	}
 	return resp.Data.URL, nil
 }
+
+func search(query string, page int) (*Media, error) {
+	u := fmt.Sprintf("%svideo/media/search.json?per_page=20&page=%d&access_token=%s&q=%s", apiRoot, page, cfg.AccessToken, url.QueryEscape(query))
+	var resp Media
+	if err := fetch(u, fmt.Sprintf("search-%s-%d.json", query, page), &resp); err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.ErrorMessage)
+	}
+	lock.Lock()
+	for _, c := range resp.Data.Media {
+		if c.Type == "MediaObject" {
+			mobjects[c.ID] = c
+		}
+	}
+	lock.Unlock()
+	return &resp, nil
+}
+
+/*
+func history(page int) {
+	u := fmt.Sprintf("%svideo/media/history.json?per_page=20&page=%d&access_token=%s", apiRoot, page, cfg.AccessToken)
+	var resp Media
+	fetch(u, fmt.Sprintf("history-%d.json", page), &resp)
+
+	if resp.StatusCode != http.StatusOK {
+		log.Fatal(resp.ErrorMessage)
+	}
+	pg := resp.Data.Pagination
+	if num == 0 {
+		fmt.Printf("history, page %d of %d\n", pg.Page, pg.Pages)
+	}
+	con.walkChildren(num, childPage, resp.Data.Media, path, "")
+*/

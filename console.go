@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +14,8 @@ import (
 )
 
 type console struct{}
+
+const N = 20
 
 func (con *console) startPlayer(u string) {
 	cmd := exec.Command("omxplayer", u)
@@ -191,4 +195,64 @@ func (con *console) search(query string, page int, path []string) {
 	pg := resp.Data.Pagination
 	fmt.Printf("search, page %d of %d\n", pg.Page, pg.Pages)
 	con.walkChildren(num, childPage, resp.Data.Media, path, "")
+}
+
+func oldMain() {
+
+	if *getCode {
+		getActivationCode()
+		return
+	}
+
+	f, err := os.Open("etvrc")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = json.NewDecoder(f).Decode(&cfg); err != nil {
+		log.Fatal(err)
+	}
+
+	if *auth {
+		authorize()
+		return
+	}
+
+	if *refresh {
+		refreshToken()
+		return
+	}
+
+	if *path != "" {
+		var c console
+		pp := strings.Split(*path, "/")
+		if pp[0] == "b" {
+			c.getFavorites(pp[1:])
+			return
+		} else if pp[0][0] == 'a' {
+			_, page := getPage(pp)
+			c.getArchive(pp[1:], page)
+			return
+		} else if pp[0][0] == 'q' {
+			if *query == "" {
+				panic("-q parameter required")
+			}
+			_, page := getPage(pp)
+			println("=== page", page)
+			c.search(*query, page, pp[1:])
+			return
+		} else if pp[0][0] == 'c' {
+			_, page := getPage(pp)
+			c.getChannels(pp[1:], page)
+			return
+		} else if pp[0][0] == 'h' {
+			_, page := getPage(pp)
+			c.getHistory(pp[1:], page)
+			return
+		} else {
+			fmt.Println("unknown path")
+		}
+		return
+	}
+
+	flag.Usage()
 }

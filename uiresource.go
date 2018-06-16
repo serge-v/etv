@@ -48,7 +48,8 @@ td.aborted { background-color:darkgray; }
     width: 240px;
     min-height: 100px;
 }
-.pre { width: 640px; white-space: pre-wrap; }
+.pre { width: 600px; white-space: pre-wrap; }
+.qfield { width: 400px; border: solid 2px #4CAF50; font-size: 32px; }
 </style>
 </head>
 <body>
@@ -112,10 +113,10 @@ const playText  = `<!DOCTYPE html>
 `
 
 const searchText  = `{{template "header"}}
-<form method="POST" action="/search/">
+<form method="GET" action="/search/">
 <table>
-	<tr><td>
-	</td></tr>
+	<tr><td><input class="qfield" type="text" name="q"></td></tr>
+	<tr><td><input class="button" type="submit" value="Search"></td></tr>
 </table>
 </form>
 {{template "footer"}}
@@ -129,6 +130,7 @@ const uiText  = `{{define "main"}}
 	<tr><td><a class="button" href="/archive">archive</a></td></tr>
 	<tr><td><a class="button" href="/search">search</a></td></tr>
 </table>
+version: {{.Version}}
 {{template "footer"}}
 {{end}}
 
@@ -159,6 +161,7 @@ and enter the code:<br>
 <table>
 	{{range .List}}
 	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
+	<tr><td>{{.WatchStatus}}</td></tr>
 	{{end}}
 </table>
 {{template "footer"}}
