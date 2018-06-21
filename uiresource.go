@@ -4,21 +4,28 @@ import (
 	"html/template"
 )
 
-const channelsText  = `{{template "header"}}
+const channelsText  = `{{define "channels"}}
+{{template "header"}}
 <table>
 	{{range .List}}
 	<tr><td><a class="button" href="/channel/{{.ID}}">{{.Name}}</a></td></tr>
 	{{end}}
 </table>
 {{template "footer"}}
+{{end}}
+
 `
 
-const footerText  = `</body>
+const footerText  = `{{define "footer"}}
+</body>
 </html>
+{{end}}
+
 
 `
 
-const headerText  = `<!DOCTYPE html>
+const headerText  = `{{define "header"}}
+<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width; maximum-scale=1; minimum-scale=1;" />
@@ -48,15 +55,20 @@ td.aborted { background-color:darkgray; }
     width: 240px;
     min-height: 100px;
 }
+.blue {
+	background-color: #6C70BF;
+}
 .pre { width: 600px; white-space: pre-wrap; }
 .qfield { width: 400px; border: solid 2px #4CAF50; font-size: 32px; }
 </style>
 </head>
 <body>
+{{end}}
 
 `
 
-const playText  = `<!DOCTYPE html>
+const playText  = `{{define "play"}}
+<!DOCTYPE html>
 <html>
 <head>
 <title>Player</title>
@@ -92,7 +104,7 @@ const playText  = `<!DOCTYPE html>
 		<tr><td style="color: red">ERROR: {{.Error}}</td><tr>
 		{{end}}
 		<tr>
-			<td><a href="/" class="button left">Stop</a></td>
+			<td><a href="/" class="button left">Main</a></td>
 			<td><a href="/play?cmd=pause" class="button right">Pause</a></td>
 		<tr>
 		<tr>
@@ -107,12 +119,22 @@ const playText  = `<!DOCTYPE html>
 			<td><a href="/play?cmd=seek&arg=-600" class="button left">-600</a></td>
 			<td><a href="/play?cmd=seek&arg=600" class="button right">+600</a></td>
 		</tr>
+		<tr>
+			<td>
+				Duration: {{.Status.Duration}}<br>
+				Position: {{.Status.Position}}<br>
+				Paused: {{.Status.Paused}}
+			</td>
+		</tr>
 	</table>
 </body>
 </html>
+{{end}}
+
 `
 
-const searchText  = `{{template "header"}}
+const searchText  = `{{define "search"}}
+{{template "header"}}
 <form method="GET" action="/search/">
 <table>
 	<tr><td><input class="qfield" type="text" name="q"></td></tr>
@@ -120,15 +142,19 @@ const searchText  = `{{template "header"}}
 </table>
 </form>
 {{template "footer"}}
+{{end}}
+
 `
 
 const uiText  = `{{define "main"}}
 {{template "header"}}
 <table>
 	<tr><td><a class="button" href="/bookmarks">bookmarks</a></td></tr>
+	<tr><td><a class="button" href="/history">history</a></td></tr>
 	<tr><td><a class="button" href="/channels">channels</a></td></tr>
 	<tr><td><a class="button" href="/archive">archive</a></td></tr>
 	<tr><td><a class="button" href="/search">search</a></td></tr>
+	<tr><td><a class="button blue" href="/play/">player</a></td></tr>
 </table>
 version: {{.Version}}
 {{template "footer"}}

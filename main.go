@@ -4,7 +4,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 )
@@ -44,11 +43,6 @@ var cacheDir = "/tmp/etvnet-cache." + os.Getenv("USER") + "/"
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	if *debug {
-		log.SetOutput(os.Stderr)
-	} else {
-		log.SetOutput(ioutil.Discard)
-	}
 	if err := os.Mkdir(cacheDir, 0700); err != nil && !os.IsExist(err) {
 		log.Fatal(err)
 	}

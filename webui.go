@@ -117,6 +117,23 @@ func bookmarksPage(w http.ResponseWriter, r *http.Request) error {
 }
 
 func historyPage(w http.ResponseWriter, r *http.Request) error {
+	bm, err := history(1)
+	if err != nil {
+		return err
+	}
+
+	d := struct {
+		List       []Child
+		Pagination Pagination
+	}{
+		List:       bm.Data.Media,
+		Pagination: bm.Data.Pagination,
+	}
+
+	if err := uiT.ExecuteTemplate(w, "items", d); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -168,6 +185,11 @@ func searchPage(w http.ResponseWriter, r *http.Request) error {
 	if err := uiT.ExecuteTemplate(w, "items", d); err != nil {
 		return err
 	}
+	return nil
+}
+
+func faviconHandler(w http.ResponseWriter, r *http.Request) error {
+	log.Println("empty favicon served")
 	return nil
 }
 
@@ -228,9 +250,10 @@ var uiT = template.New("")
 
 func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
+		log.Println(r.URL)
 		if version == "" {
 			var err error
-			//			uiT, err = template.New("").ParseGlob("templates/*.tmpl")
+			uiT, err = template.New("").ParseGlob("templates/*.tmpl")
 			if err != nil {
 				log.Println(err)
 				return
@@ -259,6 +282,7 @@ func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Han
 
 func runServer() error {
 	http.Handle("/", errorHandler(mainPage))
+	http.Handle("/favicon.ico", errorHandler(faviconHandler))
 	http.Handle("/bookmarks/", errorHandler(bookmarksPage))
 	http.Handle("/history/", errorHandler(historyPage))
 	http.Handle("/channels/", errorHandler(channelsPage))

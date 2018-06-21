@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -160,9 +161,49 @@ func (p *videoPlayer) sendStdinCommand(s string) {
 
 var player = newPlayer()
 
+type playerStatus struct {
+	Duration time.Duration
+	Position time.Duration
+	Paused   bool
+}
+
+func getStatus() (playerStatus, error) {
+	ps := playerStatus{}
+
+	cmd := exec.Command("sh", "-c", "./dbuscontrol.sh status")
+	buf, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println(string(buf))
+		return ps, err
+	}
+	b := bytes.NewReader(buf)
+
+	var v int
+	_, err = fmt.Fscanf(b, "Duration: %d\n", &v)
+	if err != nil {
+		return ps, err
+	}
+	ps.Duration = time.Duration(v * 1000)
+
+	_, err = fmt.Fscanf(b, "Position: %d\n", &v)
+	if err != nil {
+		return ps, err
+	}
+	ps.Position = time.Duration(v * 1000)
+
+	_, err = fmt.Fscanf(b, "Paused: %t\n", &ps.Paused)
+	if err != nil {
+		return ps, err
+	}
+
+	log.Printf("status: %+v", ps)
+	return ps, nil
+}
+
 func playerHandler(w http.ResponseWriter, r *http.Request) {
 	var d struct {
-		Error error
+		Status playerStatus
+		Error  error
 	}
 
 	var id int64
@@ -186,19 +227,22 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	command := r.URL.Query().Get("cmd")
-	arg := r.URL.Query().Get("arg")
-	switch command {
-	case "seek":
-		n, _ := strconv.Atoi(arg)
-		player.seek(n)
-	case "volume":
-		n, _ := strconv.Atoi(arg)
-		player.volume(n)
-	case "pause":
-		player.pause()
+	if player.pid > 0 {
+		command := r.URL.Query().Get("cmd")
+		arg := r.URL.Query().Get("arg")
+		switch command {
+		case "seek":
+			n, _ := strconv.Atoi(arg)
+			player.seek(n)
+		case "volume":
+			n, _ := strconv.Atoi(arg)
+			player.volume(n)
+		case "pause":
+			player.pause()
+		}
 	}
 
+	d.Status, d.Error = getStatus()
 	if err := uiT.ExecuteTemplate(w, "play", d); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}

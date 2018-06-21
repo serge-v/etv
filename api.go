@@ -287,18 +287,21 @@ func search(query string, page int) (*Media, error) {
 	return &resp, nil
 }
 
-/*
-func history(page int) {
+func history(page int) (*Media, error) {
 	u := fmt.Sprintf("%svideo/media/history.json?per_page=20&page=%d&access_token=%s", apiRoot, page, cfg.AccessToken)
 	var resp Media
-	fetch(u, fmt.Sprintf("history-%d.json", page), &resp)
-
+	if err := fetch(u, fmt.Sprintf("history-%d.json", page), &resp); err != nil {
+		return nil, err
+	}
 	if resp.StatusCode != http.StatusOK {
-		log.Fatal(resp.ErrorMessage)
+		return nil, errors.New(resp.ErrorMessage)
 	}
-	pg := resp.Data.Pagination
-	if num == 0 {
-		fmt.Printf("history, page %d of %d\n", pg.Page, pg.Pages)
+	lock.Lock()
+	for _, c := range resp.Data.Media {
+		if c.Type == "MediaObject" {
+			mobjects[c.ID] = c
+		}
 	}
-	con.walkChildren(num, childPage, resp.Data.Media, path, "")
-*/
+	lock.Unlock()
+	return &resp, nil
+}
