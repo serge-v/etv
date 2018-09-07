@@ -206,19 +206,28 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		Error  error
 	}
 
-	var id int64
-	var err error
-
 	sid := r.URL.Query().Get("id")
 	if sid != "" {
-		id, err = strconv.ParseInt(sid, 10, 64)
+		id, err := strconv.ParseInt(sid, 10, 64)
 		if err != nil {
 			d.Error = err
 		}
+		link, err := getStreamURL(id)
+		if err != nil {
+			d.Error = err
+		} else {
+			log.Println("starting player:", link)
+			d.Error = player.start(link)
+		}
 	}
 
-	if id != 0 {
-		link, err := getStreamURL(id)
+	localID := r.URL.Query().Get("lid")
+	if localID != "" {
+		id, err := strconv.ParseInt(localID, 10, 64)
+		if err != nil {
+			d.Error = err
+		}
+		link, err := getLocalFile(id)
 		if err != nil {
 			d.Error = err
 		} else {

@@ -167,7 +167,9 @@ const uiText  = `{{define "main"}}
 	<tr><td><a class="button" href="/channels">channels</a></td></tr>
 	<tr><td><a class="button" href="/archive">archive</a></td></tr>
 	<tr><td><a class="button" href="/search">search</a></td></tr>
+	<tr><td><a class="button" href="/local">local</a></td></tr>
 	<tr><td><a class="button blue" href="/play/">player</a></td></tr>
+	<tr><td><a class="button blue" href="/log">log</a></td></tr>
 </table>
 version: {{.Version}}
 {{template "footer"}}
@@ -217,6 +219,16 @@ and enter the code:<br>
 	<br>
 	<img src="{{.Thumb}}">
 	<div class="pre">{{.Description}}</div>
+{{template "footer"}}
+{{end}}
+
+{{define "local"}}
+{{template "header"}}
+<table>
+	{{range .List}}
+	<tr><td><a class="button watch0" href="/play/?lid={{.ID}}">{{.Name}}</a></td></tr>
+	{{end}}
+</table>
 {{template "footer"}}
 {{end}}
 

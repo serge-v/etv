@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -162,6 +163,43 @@ func channelPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+func getLocalFile(id int64) (string, error) {
+	list, err := filepath.Glob(os.Getenv("HOME") + "/vid/*.*")
+	if err != nil {
+		return "", err
+	}
+	return list[id], nil
+}
+
+func localPage(w http.ResponseWriter, r *http.Request) error {
+	list, err := filepath.Glob(os.Getenv("HOME") + "/vid/*.*")
+	if err != nil {
+		return err
+	}
+
+	type item struct {
+		ID   int
+		Name string
+	}
+
+	type data struct {
+		List []item
+	}
+
+	d := data{}
+
+	for i, fname := range list {
+		base := filepath.Base(fname)
+		d.List = append(d.List, item{ID: i, Name: base})
+	}
+
+	if err := uiT.ExecuteTemplate(w, "local", d); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func searchPage(w http.ResponseWriter, r *http.Request) error {
 	q := r.URL.Query().Get("q")
 	if q == "" {
@@ -298,6 +336,7 @@ func runServer() error {
 	http.Handle("/authorize/", errorHandler(authorizeHandler))
 	http.HandleFunc("/play/", playerHandler)
 	http.HandleFunc("/log", logHandler)
+	http.Handle("/local/", errorHandler(localPage))
 	log.Println("serving on http://localhost" + *server)
 	return http.ListenAndServe(*server, nil)
 }
