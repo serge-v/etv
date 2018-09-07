@@ -28,7 +28,7 @@ const headerText  = `{{define "header"}}
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width; maximum-scale=1; minimum-scale=1;" />
+<meta name="viewport" content="width=device-width, maximum-scale=1, minimum-scale=1" />
 <style>
 table.zebra tr:nth-child(even) { background-color: #E6E6E6; }
 .err tr:nth-child(4n) { background-color: #E6E6E6; }
@@ -51,15 +51,28 @@ td.aborted { background-color:darkgray; }
     vertical-align: middle;
     text-decoration: none;
     display: inline-block;
-    font-size: 32px;
-    width: 240px;
+    font-size: 24px;
+    width: 274px;
     min-height: 100px;
+    font-family: helvetica;
+}
+.watch0{
+    background-color: #4CAF50; /* Green */
+}
+.watch1{
+    background-color: #4C2250; /* Green */
+}
+.watch2{
+    background-color: #123456; /* Green */
+}
+a:active {
+    background-color: #8888FF;
 }
 .blue {
 	background-color: #6C70BF;
 }
-.pre { width: 600px; white-space: pre-wrap; }
-.qfield { width: 400px; border: solid 2px #4CAF50; font-size: 32px; }
+.pre { width: 330px; white-space: pre-wrap; }
+.qfield { width: 330px; border: solid 2px #4CAF50; font-size: 32px; }
 </style>
 </head>
 <body>
@@ -163,7 +176,8 @@ version: {{.Version}}
 {{define "activation"}}
 {{template "header"}}
 <h2>Activation</h2>
-To activate the box enter go to <a href="http://etvnet.com/activate">etvnet activation page</a><br>
+To activate the box enter go to <a href="https://www.etvnet.com/device/">etvnet activation page</a><br>
+test: <a href="https://www.etvnet.com/device/code/{{.Code}}/?format=json">test</a><br>
 and enter the code:<br>
 <h3>{{.Code}}</h3>
 <a class="button" href="/authorize">Code entered</a><br>
@@ -186,8 +200,7 @@ and enter the code:<br>
 {{template "header"}}
 <table>
 	{{range .List}}
-	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
-	<tr><td>{{.WatchStatus}}</td></tr>
+	<tr><td><a class="button watch{{.WatchStatus}}" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
 	{{end}}
 </table>
 {{template "footer"}}

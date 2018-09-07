@@ -15,7 +15,8 @@ version: {{.Version}}
 {{define "activation"}}
 {{template "header"}}
 <h2>Activation</h2>
-To activate the box enter go to <a href="http://etvnet.com/activate">etvnet activation page</a><br>
+To activate the box enter go to <a href="https://www.etvnet.com/device/">etvnet activation page</a><br>
+test: <a href="https://www.etvnet.com/device/code/{{.Code}}/?format=json">test</a><br>
 and enter the code:<br>
 <h3>{{.Code}}</h3>
 <a class="button" href="/authorize">Code entered</a><br>
@@ -38,8 +39,7 @@ and enter the code:<br>
 {{template "header"}}
 <table>
 	{{range .List}}
-	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
-	<tr><td>{{.WatchStatus}}</td></tr>
+	<tr><td><a class="button watch{{.WatchStatus}}" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
 	{{end}}
 </table>
 {{template "footer"}}

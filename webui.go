@@ -280,6 +280,10 @@ func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Han
 	return http.HandlerFunc(f)
 }
 
+func logHandler(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "/tmp/log")
+}
+
 func runServer() error {
 	http.Handle("/", errorHandler(mainPage))
 	http.Handle("/favicon.ico", errorHandler(faviconHandler))
@@ -293,6 +297,7 @@ func runServer() error {
 	http.Handle("/activate/", errorHandler(activatePage))
 	http.Handle("/authorize/", errorHandler(authorizeHandler))
 	http.HandleFunc("/play/", playerHandler)
+	http.HandleFunc("/log", logHandler)
 	log.Println("serving on http://localhost" + *server)
 	return http.ListenAndServe(*server, nil)
 }

@@ -78,7 +78,7 @@ func fetch(u, cachePath string, d interface{}) error {
 	fname := cacheDir + cachePath
 	fi, err := os.Stat(fname)
 	maxTime := time.Now().Add(-30 * time.Second)
-	if err == nil && fi.ModTime().Before(maxTime) {
+	if u != "" && err == nil && fi.ModTime().Before(maxTime) {
 		os.Remove(fname)
 		cachePath = ""
 	}
@@ -119,10 +119,10 @@ func fetch(u, cachePath string, d interface{}) error {
 
 	if cachePath != "" {
 		if err := ioutil.WriteFile(fname, buf, 0600); err != nil {
-			log.Println(err)
+			log.Println("error:", err, "buf:", string(buf))
 			return err
 		}
-		log.Print("cached:", cachePath)
+		log.Print("cached:", fname)
 	}
 	if err := json.Unmarshal(buf, d); err != nil {
 		return err
