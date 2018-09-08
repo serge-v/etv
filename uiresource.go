@@ -132,13 +132,6 @@ const playText  = `{{define "play"}}
 			<td><a href="/play?cmd=seek&arg=-600" class="button left">-600</a></td>
 			<td><a href="/play?cmd=seek&arg=600" class="button right">+600</a></td>
 		</tr>
-		<tr>
-			<td>
-				Duration: {{.Status.Duration}}<br>
-				Position: {{.Status.Position}}<br>
-				Paused: {{.Status.Paused}}
-			</td>
-		</tr>
 	</table>
 </body>
 </html>
@@ -179,10 +172,9 @@ version: {{.Version}}
 {{template "header"}}
 <h2>Activation</h2>
 To activate the box enter go to <a href="https://www.etvnet.com/device/">etvnet activation page</a><br>
-test: <a href="https://www.etvnet.com/device/code/{{.Code}}/?format=json">test</a><br>
 and enter the code:<br>
-<h3>{{.Code}}</h3>
-<a class="button" href="/authorize">Code entered</a><br>
+<h3>{{.UserCode}}</h3>
+<a class="button" href="/authorize?device_code={{.DeviceCode}}">Code entered</a><br>
 <a class="button" href="/">Cancel</a><br>
 {{template "footer"}}
 {{end}}
@@ -228,6 +220,7 @@ and enter the code:<br>
 	{{range .List}}
 	<tr><td><a class="button watch0" href="/play/?lid={{.ID}}">{{.Name}}</a></td></tr>
 	{{end}}
+	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
 {{template "footer"}}
 {{end}}

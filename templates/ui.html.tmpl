@@ -18,10 +18,9 @@ version: {{.Version}}
 {{template "header"}}
 <h2>Activation</h2>
 To activate the box enter go to <a href="https://www.etvnet.com/device/">etvnet activation page</a><br>
-test: <a href="https://www.etvnet.com/device/code/{{.Code}}/?format=json">test</a><br>
 and enter the code:<br>
-<h3>{{.Code}}</h3>
-<a class="button" href="/authorize">Code entered</a><br>
+<h3>{{.UserCode}}</h3>
+<a class="button" href="/authorize?device_code={{.DeviceCode}}">Code entered</a><br>
 <a class="button" href="/">Cancel</a><br>
 {{template "footer"}}
 {{end}}

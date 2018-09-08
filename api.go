@@ -36,7 +36,7 @@ var scope = []string{
 const bitrate = 400
 
 func getURL(u string) ([]byte, error) {
-	log.Println("downloading url:", u)
+	log.Println("getURL:", u)
 	resp, err := http.Get(u)
 	if err != nil {
 		return nil, err
@@ -45,16 +45,11 @@ func getURL(u string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	if *debug {
-		fmt.Fprintln(os.Stderr, u)
-		fmt.Fprintln(os.Stderr, resp.Status)
-		fmt.Println(string(buf))
-	}
 	return buf, nil
 }
 
-var ErrInvalidToken = errors.New("invalid token")
-var ErrInvalidGrant = errors.New("invalid grant")
+var errInvalidToken = errors.New("invalid token")
+var errInvalidGrant = errors.New("invalid grant")
 
 func checkToken(buf []byte) error {
 	var base Base
@@ -63,10 +58,10 @@ func checkToken(buf []byte) error {
 		return err
 	}
 	if base.Error == "invalid_token" {
-		return ErrInvalidToken
+		return errInvalidToken
 	}
 	if base.Error == "invalid_grant" {
-		return ErrInvalidGrant
+		return errInvalidGrant
 	}
 	if base.Error != "" {
 		return errors.New(base.Error)
@@ -74,7 +69,12 @@ func checkToken(buf []byte) error {
 	return nil
 }
 
-func fetch(u, cachePath string, d interface{}) error {
+type api struct {
+	deviceCode string
+	auth       authorizationResp
+}
+
+func (a *api) fetch(u, cachePath string, d interface{}) error {
 	fname := cacheDir + cachePath
 	fi, err := os.Stat(fname)
 	maxTime := time.Now().Add(-30 * time.Second)
@@ -86,8 +86,8 @@ func fetch(u, cachePath string, d interface{}) error {
 		buf, err := ioutil.ReadFile(fname)
 		if err == nil {
 			err = checkToken(buf)
-			if err == ErrInvalidToken {
-				if err = refreshToken(); err != nil {
+			if err == errInvalidToken {
+				if err = a.refreshToken(); err != nil {
 					return err
 				}
 			}
@@ -108,8 +108,8 @@ func fetch(u, cachePath string, d interface{}) error {
 		return err
 	}
 	err = checkToken(buf)
-	if err == ErrInvalidToken {
-		if err = refreshToken(); err != nil {
+	if err == errInvalidToken {
+		if err = a.refreshToken(); err != nil {
 			return err
 		}
 	}
@@ -133,10 +133,10 @@ func fetch(u, cachePath string, d interface{}) error {
 var mobjects = make(map[int64]Child)
 var lock sync.Mutex
 
-func getBookmarkFolder(folder int64) (*Bookmarks, error) {
-	u := fmt.Sprintf("%svideo/bookmarks/folders/%d/items.json?per_page=20&page=1&access_token=%s", apiRoot, folder, cfg.AccessToken)
+func (a *api) getBookmarkFolder(folder int64) (*Bookmarks, error) {
+	u := fmt.Sprintf("%svideo/bookmarks/folders/%d/items.json?per_page=20&page=1&access_token=%s", apiRoot, folder, a.auth.AccessToken)
 	var resp Bookmarks
-	if err := fetch(u, "b1.json", &resp); err != nil {
+	if err := a.fetch(u, "b1.json", &resp); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -154,10 +154,10 @@ func getBookmarkFolder(folder int64) (*Bookmarks, error) {
 	return &resp, nil
 }
 
-func getMyFavorites() (*Bookmarks, error) {
-	u := fmt.Sprintf("%svideo/bookmarks/folders.json?per_page=20&access_token=%s", apiRoot, cfg.AccessToken)
+func (a *api) getMyFavorites() (*Bookmarks, error) {
+	u := fmt.Sprintf("%svideo/bookmarks/folders.json?per_page=20&access_token=%s", apiRoot, a.auth.AccessToken)
 	var resp Folders
-	if err := fetch(u, "b.json", &resp); err != nil {
+	if err := a.fetch(u, "b.json", &resp); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -165,16 +165,16 @@ func getMyFavorites() (*Bookmarks, error) {
 	}
 	for _, o := range resp.Data.Folders {
 		if o.Title == "serge" {
-			return getBookmarkFolder(o.ID)
+			return a.getBookmarkFolder(o.ID)
 		}
 	}
 	return nil, errors.New("no my favorites")
 }
 
-func getChannels() (*Channels, error) {
-	u := fmt.Sprintf("%svideo/channels.json?per_page=20&page=%d&access_token=%s", apiRoot, 1, cfg.AccessToken)
+func (a *api) getChannels() (*Channels, error) {
+	u := fmt.Sprintf("%svideo/channels.json?per_page=20&page=%d&access_token=%s", apiRoot, 1, a.auth.AccessToken)
 	var resp Channels
-	if err := fetch(u, fmt.Sprintf("channels-%d.json", page), &resp); err != nil {
+	if err := a.fetch(u, fmt.Sprintf("channels-%d.json", page), &resp); err != nil {
 		log.Println(u, err)
 		return nil, err
 	}
@@ -184,10 +184,10 @@ func getChannels() (*Channels, error) {
 	return &resp, nil
 }
 
-func getChannel(id int64) (*Media, error) {
-	u := fmt.Sprintf("%svideo/media/channel/%d/archive.json?per_page=20&page=%d&access_token=%s", apiRoot, id, 1, cfg.AccessToken)
+func (a *api) getChannel(id int64) (*Media, error) {
+	u := fmt.Sprintf("%svideo/media/channel/%d/archive.json?per_page=20&page=%d&access_token=%s", apiRoot, id, 1, a.auth.AccessToken)
 	var resp Media
-	if err := fetch(u, fmt.Sprintf("channel-%d-%d.json", id, page), &resp); err != nil {
+	if err := a.fetch(u, fmt.Sprintf("channel-%d-%d.json", id, page), &resp); err != nil {
 		return nil, err
 	}
 
@@ -206,10 +206,10 @@ func getChannel(id int64) (*Media, error) {
 	return &resp, nil
 }
 
-func getChildren(id int64, page int) (*Children, error) {
-	u := fmt.Sprintf("%svideo/media/%d/children.json?per_page=%d&page=%d&access_token=%s", apiRoot, id, N, page, cfg.AccessToken)
+func (a *api) getChildren(id int64, page int) (*Children, error) {
+	u := fmt.Sprintf("%svideo/media/%d/children.json?per_page=%d&page=%d&access_token=%s", apiRoot, id, N, page, a.auth.AccessToken)
 	var resp Children
-	if err := fetch(u, fmt.Sprintf("m%d-page%d.json", id, page), &resp); err != nil {
+	if err := a.fetch(u, fmt.Sprintf("m%d-page%d.json", id, page), &resp); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -225,10 +225,10 @@ func getChildren(id int64, page int) (*Children, error) {
 	return &resp, nil
 }
 
-func getArchive(page int) (*Media, error) {
-	u := fmt.Sprintf("%svideo/media/archive.json?per_page=20&page=%d&access_token=%s", apiRoot, page, cfg.AccessToken)
+func (a *api) getArchive(page int) (*Media, error) {
+	u := fmt.Sprintf("%svideo/media/archive.json?per_page=20&page=%d&access_token=%s", apiRoot, page, a.auth.AccessToken)
 	var resp Media
-	if err := fetch(u, fmt.Sprintf("archive-%d.json", page), &resp); err != nil {
+	if err := a.fetch(u, fmt.Sprintf("archive-%d.json", page), &resp); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -247,16 +247,16 @@ func getArchive(page int) (*Media, error) {
 	return &resp, nil
 }
 
-func getChild(id int64) Child {
+func (a *api) getChild(id int64) Child {
 	lock.Lock()
 	defer lock.Unlock()
 	return mobjects[id]
 }
 
-func getStreamURL(id int64) (string, error) {
-	u := fmt.Sprintf("%svideo/media/%d/watch.json?format=%s&protocol=hls&bitrate=%d&access_token=%s", apiRoot, id, "mp4", bitrate, cfg.AccessToken)
+func (a *api) getStreamURL(id int64) (string, error) {
+	u := fmt.Sprintf("%svideo/media/%d/watch.json?format=%s&protocol=hls&bitrate=%d&access_token=%s", apiRoot, id, "mp4", bitrate, a.auth.AccessToken)
 	var resp StreamURL
-	if err := fetch(u, fmt.Sprintf("url%d.json", id), &resp); err != nil {
+	if err := a.fetch(u, fmt.Sprintf("url%d.json", id), &resp); err != nil {
 		return "", err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -268,10 +268,10 @@ func getStreamURL(id int64) (string, error) {
 	return resp.Data.URL, nil
 }
 
-func search(query string, page int) (*Media, error) {
-	u := fmt.Sprintf("%svideo/media/search.json?per_page=20&page=%d&access_token=%s&q=%s", apiRoot, page, cfg.AccessToken, url.QueryEscape(query))
+func (a *api) search(query string, page int) (*Media, error) {
+	u := fmt.Sprintf("%svideo/media/search.json?per_page=20&page=%d&access_token=%s&q=%s", apiRoot, page, a.auth.AccessToken, url.QueryEscape(query))
 	var resp Media
-	if err := fetch(u, fmt.Sprintf("search-%s-%d.json", query, page), &resp); err != nil {
+	if err := a.fetch(u, fmt.Sprintf("search-%s-%d.json", query, page), &resp); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -287,10 +287,10 @@ func search(query string, page int) (*Media, error) {
 	return &resp, nil
 }
 
-func history(page int) (*Media, error) {
-	u := fmt.Sprintf("%svideo/media/history.json?per_page=20&page=%d&access_token=%s", apiRoot, page, cfg.AccessToken)
+func (a *api) history(page int) (*Media, error) {
+	u := fmt.Sprintf("%svideo/media/history.json?per_page=20&page=%d&access_token=%s", apiRoot, page, a.auth.AccessToken)
 	var resp Media
-	if err := fetch(u, fmt.Sprintf("history-%d.json", page), &resp); err != nil {
+	if err := a.fetch(u, fmt.Sprintf("history-%d.json", page), &resp); err != nil {
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {

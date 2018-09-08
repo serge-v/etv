@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -15,7 +14,7 @@ import (
 
 const stampZ = "2006-01-02 15:04:05Z"
 
-func mainPage(w http.ResponseWriter, r *http.Request) error {
+func mainPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	d := struct {
 		Version string
 	}{
@@ -29,33 +28,27 @@ func mainPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func activatePage(w http.ResponseWriter, r *http.Request) error {
-	var err error
-	var d struct {
-		Code string
-	}
-
-	d.Code, err = getActivationCode()
+func activatePage(a *api, w http.ResponseWriter, r *http.Request) error {
+	activation, err := a.getActivation()
 	if err != nil {
 		return err
 	}
 
-	if err := uiT.ExecuteTemplate(w, "activation", d); err != nil {
+	if err := uiT.ExecuteTemplate(w, "activation", activation); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func authorizeHandler(w http.ResponseWriter, r *http.Request) error {
-	if err := authorize(); err != nil {
+func authorizeHandler(a *api, w http.ResponseWriter, r *http.Request) error {
+	if err := a.authorize(); err != nil {
 		return err
 	}
-	http.Redirect(w, r, "/bookmarks", http.StatusFound)
 	return nil
 }
 
-func itemsPage(w http.ResponseWriter, r *http.Request) error {
+func itemsPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 2 {
 		return errors.New("invalid /items/ link")
@@ -76,7 +69,7 @@ func itemsPage(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	m, err := getChildren(id, 1)
+	m, err := a.getChildren(id, 1)
 	if err != nil {
 		return err
 	}
@@ -96,8 +89,8 @@ func itemsPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func bookmarksPage(w http.ResponseWriter, r *http.Request) error {
-	bm, err := getMyFavorites()
+func bookmarksPage(a *api, w http.ResponseWriter, r *http.Request) error {
+	bm, err := a.getMyFavorites()
 	if err != nil {
 		return err
 	}
@@ -117,8 +110,8 @@ func bookmarksPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func historyPage(w http.ResponseWriter, r *http.Request) error {
-	bm, err := history(1)
+func historyPage(a *api, w http.ResponseWriter, r *http.Request) error {
+	bm, err := a.history(1)
 	if err != nil {
 		return err
 	}
@@ -138,7 +131,7 @@ func historyPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func channelPage(w http.ResponseWriter, r *http.Request) error {
+func channelPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 2 {
 		return errors.New("invalid /items/ link")
@@ -150,7 +143,7 @@ func channelPage(w http.ResponseWriter, r *http.Request) error {
 	var d struct {
 		List []Child
 	}
-	ch, err := getChannel(id)
+	ch, err := a.getChannel(id)
 	if err != nil {
 		return err
 	}
@@ -171,7 +164,7 @@ func getLocalFile(id int64) (string, error) {
 	return list[id], nil
 }
 
-func localPage(w http.ResponseWriter, r *http.Request) error {
+func localPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	list, err := filepath.Glob(os.Getenv("HOME") + "/vid/*.*")
 	if err != nil {
 		return err
@@ -200,7 +193,7 @@ func localPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func searchPage(w http.ResponseWriter, r *http.Request) error {
+func searchPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	q := r.URL.Query().Get("q")
 	if q == "" {
 		if err := uiT.ExecuteTemplate(w, "search", nil); err != nil {
@@ -213,7 +206,7 @@ func searchPage(w http.ResponseWriter, r *http.Request) error {
 		List []Child
 	}
 
-	ch, err := search(q, 1)
+	ch, err := a.search(q, 1)
 	if err != nil {
 		return err
 	}
@@ -226,16 +219,15 @@ func searchPage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func faviconHandler(w http.ResponseWriter, r *http.Request) error {
+func faviconHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("empty favicon served")
-	return nil
 }
 
-func archivePage(w http.ResponseWriter, r *http.Request) error {
+func archivePage(a *api, w http.ResponseWriter, r *http.Request) error {
 	var d struct {
 		List []Child
 	}
-	ch, err := getArchive(1)
+	ch, err := a.getArchive(1)
 	if err != nil {
 		return err
 	}
@@ -248,13 +240,13 @@ func archivePage(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func channelsPage(w http.ResponseWriter, r *http.Request) error {
+func channelsPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	var err error
 	var d struct {
 		List []Channel
 	}
 
-	ch, err := getChannels()
+	ch, err := a.getChannels()
 	if err != nil {
 		return err
 	}
@@ -286,9 +278,8 @@ var funcs = template.FuncMap{
 
 var uiT = template.New("")
 
-func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Handler {
+func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
-		log.Println(r.URL)
 		if version == "" {
 			var err error
 			uiT, err = template.New("").ParseGlob("templates/*.tmpl")
@@ -297,22 +288,49 @@ func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Han
 				return
 			}
 		}
-		f, err := os.Open("etvrc")
+
+		var auth authorizationResp
+		var a api
+
+		cookie, err := r.Cookie("atoken")
 		if err == nil {
-			if err = json.NewDecoder(f).Decode(&cfg); err != nil {
-				log.Fatal(err)
-			}
-		} else {
-			log.Println("config error", err)
+			auth.AccessToken = cookie.Value
 		}
-		if err := h(w, r); err != nil {
+		cookie, err = r.Cookie("rtoken")
+		if err == nil {
+			auth.RefreshToken = cookie.Value
+		}
+		cookie, err = r.Cookie("expires")
+		if err == nil {
+			n, _ := strconv.ParseInt(cookie.Value, 10, 32)
+			auth.ExpiresIn = int(n)
+		}
+
+		a.deviceCode = r.URL.Query().Get("device_code")
+
+		if auth.AccessToken == "" && a.deviceCode == "" {
+			activatePage(&a, w, r)
+			return
+		}
+
+		a.auth = auth
+		log.Printf("url: %s, a.auth: %+v", r.URL.String(), a.auth)
+
+		if err := h(&a, w, r); err != nil {
 			log.Println("error:", err)
-			if err == ErrInvalidGrant {
-				http.Redirect(w, r, "/activate", http.StatusFound)
+			if err == errInvalidGrant {
+				activatePage(&a, w, r)
 				return
 			}
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
+		}
+
+		if auth.AccessToken != a.auth.AccessToken {
+			http.SetCookie(w, &http.Cookie{Name: "atoken", Value: a.auth.AccessToken, Path: "/"})
+			http.SetCookie(w, &http.Cookie{Name: "rtoken", Value: a.auth.RefreshToken, Path: "/"})
+			http.SetCookie(w, &http.Cookie{Name: "expires", Value: strconv.Itoa(a.auth.ExpiresIn), Path: "/"})
+			http.Redirect(w, r, "/bookmarks/", http.StatusMovedPermanently)
 		}
 	}
 	return http.HandlerFunc(f)
@@ -324,7 +342,7 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 
 func runServer() error {
 	http.Handle("/", errorHandler(mainPage))
-	http.Handle("/favicon.ico", errorHandler(faviconHandler))
+	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.Handle("/bookmarks/", errorHandler(bookmarksPage))
 	http.Handle("/history/", errorHandler(historyPage))
 	http.Handle("/channels/", errorHandler(channelsPage))
@@ -334,7 +352,7 @@ func runServer() error {
 	http.Handle("/item/", errorHandler(itemsPage))
 	http.Handle("/activate/", errorHandler(activatePage))
 	http.Handle("/authorize/", errorHandler(authorizeHandler))
-	http.HandleFunc("/play/", playerHandler)
+	http.Handle("/play/", errorHandler(playerHandler))
 	http.HandleFunc("/log", logHandler)
 	http.Handle("/local/", errorHandler(localPage))
 	log.Println("serving on http://localhost" + *server)

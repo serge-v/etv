@@ -37,7 +37,6 @@ var (
 	query   = flag.String("q", "", "specify query for -path q request")
 )
 
-var cfg config
 var cacheDir = "/tmp/etvnet-cache." + os.Getenv("USER") + "/"
 
 func main() {

@@ -200,7 +200,7 @@ func getStatus() (playerStatus, error) {
 	return ps, nil
 }
 
-func playerHandler(w http.ResponseWriter, r *http.Request) {
+func playerHandler(a *api, w http.ResponseWriter, r *http.Request) error {
 	var d struct {
 		Status playerStatus
 		Error  error
@@ -212,7 +212,7 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			d.Error = err
 		}
-		link, err := getStreamURL(id)
+		link, err := a.getStreamURL(id)
 		if err != nil {
 			d.Error = err
 		} else {
@@ -253,6 +253,7 @@ func playerHandler(w http.ResponseWriter, r *http.Request) {
 
 	d.Status, d.Error = getStatus()
 	if err := uiT.ExecuteTemplate(w, "play", d); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return err
 	}
+	return nil
 }
