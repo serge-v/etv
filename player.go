@@ -159,7 +159,7 @@ func (p *videoPlayer) sendStdinCommand(s string) {
 	}
 }
 
-var player = newPlayer()
+var player *videoPlayer
 
 type playerStatus struct {
 	Duration time.Duration

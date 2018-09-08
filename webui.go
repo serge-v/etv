@@ -341,6 +341,7 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func runServer() error {
+	player = newPlayer()
 	http.Handle("/", errorHandler(mainPage))
 	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.Handle("/bookmarks/", errorHandler(bookmarksPage))
