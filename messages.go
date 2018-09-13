@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 type activationResp struct {
 	DeviceCode string `json:"device_code"`
 	UserCode   string `json:"user_code"`
@@ -13,6 +15,7 @@ type authorizationResp struct {
 	RefreshToken     string `json:"refresh_token"`
 	Scope            string `json:"scope"`
 	TokenType        string `json:"token_type"`
+	Expires          time.Time
 }
 
 // Base contains common fields for every response.

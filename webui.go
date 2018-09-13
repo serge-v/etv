@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"html/template"
 	"log"
@@ -10,6 +9,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/pkg/errors"
 )
 
 const stampZ = "2006-01-02 15:04:05Z"
@@ -45,6 +47,11 @@ func authorizeHandler(a *api, w http.ResponseWriter, r *http.Request) error {
 	if err := a.authorize(); err != nil {
 		return err
 	}
+	http.SetCookie(w, &http.Cookie{Name: "atoken", Value: a.auth.AccessToken, Path: "/"})
+	http.SetCookie(w, &http.Cookie{Name: "rtoken", Value: a.auth.RefreshToken, Path: "/"})
+	http.SetCookie(w, &http.Cookie{Name: "expires", Value: a.auth.Expires.Format(time.RFC3339), Path: "/"})
+	log.Printf("cookies saved: %+v", a.auth)
+	http.Redirect(w, r, "/cookies", http.StatusFound)
 	return nil
 }
 
@@ -164,6 +171,33 @@ func getLocalFile(id int64) (string, error) {
 	return list[id], nil
 }
 
+func cookiesPage(a *api, w http.ResponseWriter, r *http.Request) error {
+	d := struct {
+		Auth authorizationResp
+	}{
+		Auth: a.auth,
+	}
+
+	refresh := r.URL.Query().Get("refresh")
+	if refresh == "1" {
+		if err := a.refreshToken(); err != nil {
+			return errors.Wrap(err, "cookiesPage")
+		}
+		http.SetCookie(w, &http.Cookie{Name: "atoken", Value: a.auth.AccessToken, Path: "/"})
+		http.SetCookie(w, &http.Cookie{Name: "rtoken", Value: a.auth.RefreshToken, Path: "/"})
+		http.SetCookie(w, &http.Cookie{Name: "expires", Value: a.auth.Expires.Format(time.RFC3339), Path: "/"})
+		log.Printf("cookies saved: %+v", a.auth)
+		http.Redirect(w, r, "/cookies", http.StatusFound)
+		return nil
+	}
+
+	if err := uiT.ExecuteTemplate(w, "cookies", d); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func localPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	list, err := filepath.Glob(os.Getenv("HOME") + "/vid/*.*")
 	if err != nil {
@@ -220,7 +254,6 @@ func searchPage(a *api, w http.ResponseWriter, r *http.Request) error {
 }
 
 func faviconHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("empty favicon served")
 }
 
 func archivePage(a *api, w http.ResponseWriter, r *http.Request) error {
@@ -302,22 +335,19 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 		}
 		cookie, err = r.Cookie("expires")
 		if err == nil {
-			n, _ := strconv.ParseInt(cookie.Value, 10, 32)
-			auth.ExpiresIn = int(n)
+			t, err := time.Parse(time.RFC3339, cookie.Value)
+			if err != nil {
+				auth.Expires = t
+			}
 		}
 
 		a.deviceCode = r.URL.Query().Get("device_code")
-
-		if auth.AccessToken == "" && a.deviceCode == "" {
-			activatePage(&a, w, r)
-			return
-		}
-
 		a.auth = auth
-		log.Printf("url: %s, a.auth: %+v", r.URL.String(), a.auth)
 
+		log.Printf("request url: %s, a.auth: %+v", r.URL.String(), a.auth)
+		log.Printf("request handler: %T", h)
 		if err := h(&a, w, r); err != nil {
-			log.Println("error:", err)
+			log.Printf("request error: %+v", err)
 			if err == errInvalidGrant {
 				activatePage(&a, w, r)
 				return
@@ -325,13 +355,8 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		log.Printf("request done")
 
-		if auth.AccessToken != a.auth.AccessToken {
-			http.SetCookie(w, &http.Cookie{Name: "atoken", Value: a.auth.AccessToken, Path: "/"})
-			http.SetCookie(w, &http.Cookie{Name: "rtoken", Value: a.auth.RefreshToken, Path: "/"})
-			http.SetCookie(w, &http.Cookie{Name: "expires", Value: strconv.Itoa(a.auth.ExpiresIn), Path: "/"})
-			http.Redirect(w, r, "/bookmarks/", http.StatusMovedPermanently)
-		}
 	}
 	return http.HandlerFunc(f)
 }
@@ -356,6 +381,7 @@ func runServer() error {
 	http.Handle("/play/", errorHandler(playerHandler))
 	http.HandleFunc("/log", logHandler)
 	http.Handle("/local/", errorHandler(localPage))
+	http.Handle("/cookies", errorHandler(cookiesPage))
 	log.Println("serving on http://localhost" + *server)
 	return http.ListenAndServe(*server, nil)
 }

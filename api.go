@@ -2,15 +2,14 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"sync"
-	"time"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -39,11 +38,11 @@ func getURL(u string) ([]byte, error) {
 	log.Println("getURL:", u)
 	resp, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "get url: %s", u)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "get url body: %s", u)
 	}
 	return buf, nil
 }
@@ -54,8 +53,7 @@ var errInvalidGrant = errors.New("invalid grant")
 func checkToken(buf []byte) error {
 	var base Base
 	if err := json.Unmarshal(buf, &base); err != nil {
-		log.Println(err, string(buf))
-		return err
+		return errors.Wrap(err, "check token")
 	}
 	if base.Error == "invalid_token" {
 		return errInvalidToken
@@ -75,58 +73,23 @@ type api struct {
 }
 
 func (a *api) fetch(u, cachePath string, d interface{}) error {
-	fname := cacheDir + cachePath
-	fi, err := os.Stat(fname)
-	maxTime := time.Now().Add(-30 * time.Second)
-	if u != "" && err == nil && fi.ModTime().Before(maxTime) {
-		os.Remove(fname)
-		cachePath = ""
-	}
-	if cachePath != "" {
-		buf, err := ioutil.ReadFile(fname)
-		if err == nil {
-			err = checkToken(buf)
-			if err == errInvalidToken {
-				if err = a.refreshToken(); err != nil {
-					return err
-				}
-			}
-			if err != nil {
-				return err
-			}
-			if err = json.Unmarshal(buf, d); err != nil {
-				log.Println(cachePath, err)
-				return err
-			}
-			return nil
-		}
-	}
-
 	buf, err := getURL(u)
 	if err != nil {
 		log.Println(err)
-		return err
+		return errors.Wrapf(err, "fetch: %s", u)
 	}
 	err = checkToken(buf)
-	if err == errInvalidToken {
-		if err = a.refreshToken(); err != nil {
-			return err
-		}
-	}
 	if err != nil {
-		return err
-	}
-
-	if cachePath != "" {
-		if err := ioutil.WriteFile(fname, buf, 0600); err != nil {
-			log.Println("error:", err, "buf:", string(buf))
-			return err
-		}
-		log.Print("cached:", fname)
+		return errors.Wrap(err, "fetch")
 	}
 	if err := json.Unmarshal(buf, d); err != nil {
-		return err
+		return errors.Wrap(err, "fetch unmarshal")
 	}
+	fname := cacheDir + cachePath
+	if err := ioutil.WriteFile(fname, buf, 0600); err != nil {
+		return errors.Wrap(err, "fetch")
+	}
+	log.Println("cached into", fname)
 	return nil
 }
 
@@ -137,7 +100,7 @@ func (a *api) getBookmarkFolder(folder int64) (*Bookmarks, error) {
 	u := fmt.Sprintf("%svideo/bookmarks/folders/%d/items.json?per_page=20&page=1&access_token=%s", apiRoot, folder, a.auth.AccessToken)
 	var resp Bookmarks
 	if err := a.fetch(u, "b1.json", &resp); err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "bookmarks: %d", folder)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.ErrorMessage)
@@ -172,7 +135,8 @@ func (a *api) getMyFavorites() (*Bookmarks, error) {
 }
 
 func (a *api) getChannels() (*Channels, error) {
-	u := fmt.Sprintf("%svideo/channels.json?per_page=20&page=%d&access_token=%s", apiRoot, 1, a.auth.AccessToken)
+	const page = 1
+	u := fmt.Sprintf("%svideo/channels.json?per_page=20&page=%d&access_token=%s", apiRoot, page, a.auth.AccessToken)
 	var resp Channels
 	if err := a.fetch(u, fmt.Sprintf("channels-%d.json", page), &resp); err != nil {
 		log.Println(u, err)
@@ -185,7 +149,8 @@ func (a *api) getChannels() (*Channels, error) {
 }
 
 func (a *api) getChannel(id int64) (*Media, error) {
-	u := fmt.Sprintf("%svideo/media/channel/%d/archive.json?per_page=20&page=%d&access_token=%s", apiRoot, id, 1, a.auth.AccessToken)
+	const page = 1
+	u := fmt.Sprintf("%svideo/media/channel/%d/archive.json?per_page=20&page=%d&access_token=%s", apiRoot, id, page, a.auth.AccessToken)
 	var resp Media
 	if err := a.fetch(u, fmt.Sprintf("channel-%d-%d.json", id, page), &resp); err != nil {
 		return nil, err
@@ -261,9 +226,6 @@ func (a *api) getStreamURL(id int64) (string, error) {
 	}
 	if resp.StatusCode != http.StatusOK {
 		return "", errors.New(resp.ErrorMessage)
-	}
-	if *debug {
-		log.Println("stream:", resp.Data.URL)
 	}
 	return resp.Data.URL, nil
 }

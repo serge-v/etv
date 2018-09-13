@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"strings"
+	"time"
 )
 
 func (a *api) getActivation() (activationResp, error) {
@@ -71,6 +72,8 @@ func (a *api) refreshToken() error {
 		log.Println(err, string(buf))
 		return err
 	}
-	log.Printf("+%v", a.auth)
+	a.auth.Expires = time.Now().Add(time.Second * time.Duration(a.auth.ExpiresIn))
+
+	log.Printf("%+v", a.auth)
 	return nil
 }

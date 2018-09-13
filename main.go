@@ -25,18 +25,6 @@ func processArgs() (err error) {
 	return nil
 }
 
-var (
-	debug   = flag.Bool("d", false, "debug")
-	getCode = flag.Bool("code", false, "get activation code from etvnet.com")
-	refresh = flag.Bool("r", false, "refresh token")
-	auth    = flag.Bool("auth", false, "authorize after entering activation code")
-	path    = flag.String("path", "", "get movie by `path` [abch][p]/num/... : [archive,bookmarks,channels,history][pPAGE]/NUM")
-	page    = flag.Int("p", 1, "page number")
-	num     = flag.Int("n", 0, "movie number")
-	play    = flag.Bool("play", false, "start player")
-	query   = flag.String("q", "", "specify query for -path q request")
-)
-
 var cacheDir = "/tmp/etvnet-cache." + os.Getenv("USER") + "/"
 
 func main() {
