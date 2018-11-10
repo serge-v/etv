@@ -85,11 +85,6 @@ func (a *api) fetch(u, cachePath string, d interface{}) error {
 	if err := json.Unmarshal(buf, d); err != nil {
 		return errors.Wrap(err, "fetch unmarshal")
 	}
-	fname := cacheDir + cachePath
-	if err := ioutil.WriteFile(fname, buf, 0600); err != nil {
-		return errors.Wrap(err, "fetch")
-	}
-	log.Println("cached into", fname)
 	return nil
 }
 

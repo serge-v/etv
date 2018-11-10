@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 )
 
 var (
@@ -25,14 +24,9 @@ func processArgs() (err error) {
 	return nil
 }
 
-var cacheDir = "/tmp/etvnet-cache." + os.Getenv("USER") + "/"
-
 func main() {
 	flag.Parse()
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	if err := os.Mkdir(cacheDir, 0700); err != nil && !os.IsExist(err) {
-		log.Fatal(err)
-	}
 
 	if err := processArgs(); err != nil {
 		log.Fatalf("%+v", err)

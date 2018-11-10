@@ -20,8 +20,8 @@ func main() {
 	if err := os.Chdir("../etv"); err != nil {
 		log.Fatal(err)
 	}
-	//	generate()
-	//	build()
+	generate()
+	build()
 	deploy()
 }
 
@@ -76,6 +76,19 @@ func run(program string, args ...string) {
 	}
 }
 
+func runterm(program string, args ...string) {
+	cmd := exec.Command(program, args...)
+	if *verbose {
+		log.Printf("%v\n", cmd.Args)
+	}
+	cmd.Stdin = os.Stdin
+	buf, err := cmd.CombinedOutput()
+	fmt.Println(string(buf))
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func deploy() {
 	fname := os.Getenv("HOME") + "/.config/etv/deploy.txt"
 	buf, err := ioutil.ReadFile(fname)
@@ -84,5 +97,5 @@ func deploy() {
 	}
 	dst := strings.TrimSpace(string(buf))
 	run("scp", "etv", dst+":/tmp/etv.new")
-	run("ssh", "-t", dst, "su", "-c", `"./writeenable.sh; cp /tmp/etv.new etv; ./etv -version"`)
+	runterm("ssh", "-t", dst, "su", "-c", `"./writeenable.sh; cp /tmp/etv.new etv; ./etv -version"`)
 }
