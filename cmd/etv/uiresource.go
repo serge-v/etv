@@ -155,14 +155,15 @@ const searchText  = `{{define "search"}}
 const uiText  = `{{define "main"}}
 {{template "header"}}
 <table>
-	<tr><td><a class="button" href="/bookmarks">bookmarks</a></td></tr>
-	<tr><td><a class="button" href="/history">history</a></td></tr>
-	<tr><td><a class="button" href="/channels">channels</a></td></tr>
-	<tr><td><a class="button" href="/archive">archive</a></td></tr>
-	<tr><td><a class="button" href="/search">search</a></td></tr>
-	<tr><td><a class="button" href="/local">local</a></td></tr>
-	<tr><td><a class="button blue" href="/play/">player</a></td></tr>
-	<tr><td><a class="button blue" href="/log">log</a></td></tr>
+	<tr><td><a class="button" href="/bookmarks">Bookmarks</a></td></tr>
+	<tr><td><a class="button" href="/history">History</a></td></tr>
+	<tr><td><a class="button" href="/channels">Channels</a></td></tr>
+	<tr><td><a class="button" href="/archive">Archive</a></td></tr>
+	<tr><td><a class="button" href="/search">Search</a></td></tr>
+	<tr><td><a class="button" href="/local">Local</a></td></tr>
+	<tr><td><a class="button blue" href="/play/">Player</a></td></tr>
+	<tr><td><a class="button blue" href="/log">Log</a></td></tr>
+	<tr><td><a class="button blue" href="/cookies">Cookies</a></td></tr>
 </table>
 version: {{.Version}}
 {{template "footer"}}
@@ -174,8 +175,10 @@ version: {{.Version}}
 To activate the box enter go to <a href="https://www.etvnet.com/device/">etvnet activation page</a><br>
 and enter the code:<br>
 <h3>{{.UserCode}}</h3>
-<a class="button" href="/authorize?device_code={{.DeviceCode}}">Code entered</a><br>
-<a class="button" href="/">Cancel</a><br>
+<table>
+<tr><td><a class="button" href="/authorize?device_code={{.DeviceCode}}">Code entered</a></td></tr>
+<tr><td><a class="button blue" href="/">Main</a></td></tr>
+</table>
 {{template "footer"}}
 {{end}}
 
@@ -186,6 +189,7 @@ and enter the code:<br>
 	{{range .List}}
 	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.OnAir}}</a></td></tr>
 	{{end}}
+	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
 {{template "footer"}}
 {{end}}
@@ -220,6 +224,22 @@ and enter the code:<br>
 	{{range .List}}
 	<tr><td><a class="button watch0" href="/play/?lid={{.ID}}">{{.Name}}</a></td></tr>
 	{{end}}
+	<tr><td><a class="button blue" href="/">main</a></td></tr>
+</table>
+{{template "footer"}}
+{{end}}
+
+{{define "cookies"}}
+{{template "header"}}
+
+<table>
+	<tr><td>AccessToken:</td><td>{{.Auth.AccessToken}}</td></tr>
+	<tr><td>Expires:</td><td>{{.Auth.Expires}}</td></tr>
+	<tr><td>RefreshToken:</td><td>{{.Auth.RefreshToken}}</td></tr>
+</table>
+<table>
+	<tr><td><a class="button blue" href="/cookies?refresh=1">Refresh</a></td></tr>
+	<tr><td><a class="button blue" href="/activate">Activate</a></td></tr>
 	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
 {{template "footer"}}
