@@ -58,7 +58,9 @@ func build() {
 	}
 	cmd.Env = append(os.Environ(), "GOOS=linux", "GOARCH=arm", "GOARM=5")
 	buf, err := cmd.CombinedOutput()
-	fmt.Println(string(buf))
+	if *verbose {
+		fmt.Println(string(buf))
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -70,7 +72,9 @@ func run(program string, args ...string) {
 		log.Printf("%v\n", cmd.Args)
 	}
 	buf, err := cmd.CombinedOutput()
-	fmt.Println(string(buf))
+	if *verbose {
+		fmt.Println(string(buf))
+	}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,9 +88,7 @@ func runterm(program string, args ...string) {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	buf, err := cmd.CombinedOutput()
-	fmt.Println(string(buf))
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		log.Fatal(err)
 	}
 }
