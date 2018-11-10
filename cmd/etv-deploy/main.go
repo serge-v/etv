@@ -82,6 +82,8 @@ func runterm(program string, args ...string) {
 		log.Printf("%v\n", cmd.Args)
 	}
 	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	buf, err := cmd.CombinedOutput()
 	fmt.Println(string(buf))
 	if err != nil {
