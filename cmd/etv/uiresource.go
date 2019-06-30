@@ -47,14 +47,14 @@ td.aborted { background-color:darkgray; }
     background-color: #4CAF50; /* Green */
     border: none;
     color: white;
-    padding: 120px 0px 0px 0px;
+    padding: 20px 10px 10px 10px;
     text-align: center;
     text-decoration: none;
-    font-size: 72px;
+    font-size: 36px;
     font-family: helvetica;
     vertical-align: middle;
-    width: 100%;
-    height: 280px;
+    width: 80%;
+    height: 70px;
     display: block;
 }
 .watch0{
