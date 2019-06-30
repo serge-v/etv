@@ -13,6 +13,7 @@ import (
 var verbose = flag.Bool("verbose", false, "print commands")
 
 func main() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	flag.Parse()
 	if *verbose {
 		log.Printf("cd ../etv")
@@ -32,7 +33,7 @@ func getVersion() string {
 	}
 	buf, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(string(buf), err)
 	}
 	return strings.TrimSpace(string(buf))
 }

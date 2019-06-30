@@ -30,6 +30,7 @@ const headerText  = `{{define "header"}}
 <head>
 <meta name="viewport" content="width=device-width, maximum-scale=1, minimum-scale=1" />
 <style>
+table{ width:100%; }
 table.zebra tr:nth-child(even) { background-color: #E6E6E6; }
 .err tr:nth-child(4n) { background-color: #E6E6E6; }
 .err tr:nth-child(4n+1) { background-color: #E6E6E6; }
@@ -46,15 +47,15 @@ td.aborted { background-color:darkgray; }
     background-color: #4CAF50; /* Green */
     border: none;
     color: white;
-    padding: 15px 32px;
+    padding: 120px 0px 0px 0px;
     text-align: center;
-    vertical-align: middle;
     text-decoration: none;
-    display: inline-block;
-    font-size: 24px;
-    width: 274px;
-    min-height: 100px;
+    font-size: 72px;
     font-family: helvetica;
+    vertical-align: middle;
+    width: 100%;
+    height: 280px;
+    display: block;
 }
 .watch0{
     background-color: #4CAF50; /* Green */
@@ -81,60 +82,29 @@ a:active {
 `
 
 const playText  = `{{define "play"}}
-<!DOCTYPE html>
-<html>
-<head>
-<title>Player</title>
-<meta name="viewport" content="width=device-width; maximum-scale=1; minimum-scale=1;" />
-<style type="text/css">
-.button {
-	background-color: lightgray;
-	border: none;
-	color: white;
-	padding: 15px 32px;
-	text-align: center;
-	vertical-align: middle;
-	text-decoration: none;
-	display: inline-block;
-	font-size: 32px;
-	width: 100px;
-	height: 80px;
-}
-
-.left {
-	background-color: #6C70BF;
-}
-
-.right {
-	background-color: #4C50AF;
-}
-
-</style>
-</head>
-<body>
-	<table border="0" style="width: 200px">
-		{{if .Error}}
-		<tr><td style="color: red">ERROR: {{.Error}}</td><tr>
-		{{end}}
-		<tr>
-			<td><a href="/" class="button left">Main</a></td>
-			<td><a href="/play?cmd=pause" class="button right">Pause</a></td>
-		<tr>
-		<tr>
-			<td><a href="/play?cmd=volume&arg=-10" class="button left">Vol -</a></td>
-			<td><a href="/play?cmd=volume&arg=10" class="button right">Vol +</a></td>
-		</tr>
-		<tr>
-			<td><a href="/play?cmd=seek&arg=-30" class="button left">-30</a></td>
-			<td><a href="/play?cmd=seek&arg=30" class="button right">+30</a></td>
-		</tr>
-		<tr>
-			<td><a href="/play?cmd=seek&arg=-600" class="button left">-600</a></td>
-			<td><a href="/play?cmd=seek&arg=600" class="button right">+600</a></td>
-		</tr>
-	</table>
-</body>
-</html>
+{{template "header"}}
+<table>
+        {{if .Error}}
+        <tr><td style="color: red">ERROR: {{.Error}}</td><tr>
+        {{end}}
+        <tr>
+        <td><a href="/" class="button blue">Main</a></td>
+        <td><a href="/play?cmd=pause" class="button blue">Pause</a></td>
+        <tr>
+        <tr>
+        <td><a href="/play?cmd=volume&arg=-10" class="button blue">Vol -</a></td>
+        <td><a href="/play?cmd=volume&arg=10" class="button blue">Vol +</a></td>
+        </tr>
+        <tr>
+        <td><a href="/play?cmd=seek&arg=-30" class="button blue">-30</a></td>
+        <td><a href="/play?cmd=seek&arg=30" class="button blue">+30</a></td>
+        </tr>
+        <tr>
+        <td><a href="/play?cmd=seek&arg=-600" class="button blue">-600</a></td>
+        <td><a href="/play?cmd=seek&arg=600" class="button blue">+600</a></td>
+        </tr>
+</table>
+{{template "footer"}}
 {{end}}
 
 `
