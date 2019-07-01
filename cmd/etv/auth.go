@@ -47,7 +47,8 @@ func (a *api) authorize() error {
 		return err
 	}
 	a.deviceCode = ""
-	log.Printf("authorization: +%v", a.auth)
+	a.auth.Expires = time.Now().Add(time.Second * time.Duration(a.auth.ExpiresIn))
+	log.Printf("authorization: %+v", a.auth)
 	return nil
 }
 
@@ -73,7 +74,6 @@ func (a *api) refreshToken() error {
 		return err
 	}
 	a.auth.Expires = time.Now().Add(time.Second * time.Duration(a.auth.ExpiresIn))
-
-	log.Printf("%+v", a.auth)
+	log.Printf("refresh: %+v", a.auth)
 	return nil
 }
