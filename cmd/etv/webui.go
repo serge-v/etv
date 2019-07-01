@@ -352,7 +352,17 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 				activatePage(&a, w, r)
 				return
 			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			d := struct {
+				Error string
+			}{
+				Error: err.Error(),
+			}
+
+			if err := uiT.ExecuteTemplate(w, "error", d); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Println(err)
+				return
+			}
 			return
 		}
 		log.Printf("request done")

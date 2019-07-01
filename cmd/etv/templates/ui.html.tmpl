@@ -1,3 +1,12 @@
+{{define "error"}}
+{{template "header"}}
+<table>
+	<tr><td><div class="button error">{{.Error}}</div></td></tr>
+	<tr><td><a class="button blue" href="/">Main</a></td></tr>
+</table>
+{{template "footer"}}
+{{end}}
+
 {{define "main"}}
 {{template "header"}}
 <table>
@@ -33,7 +42,7 @@ and enter the code:<br>
 <h1>Bookmarks</h1>
 <table>
 	{{range .List}}
-	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.OnAir}}</a></td></tr>
+	<tr><td><a class="button title" href="/item/{{.ID}}">{{.ShortName}}<br>{{.OnAir}}</a></td></tr>
 	{{end}}
 	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
@@ -44,7 +53,7 @@ and enter the code:<br>
 {{template "header"}}
 <table>
 	{{range .List}}
-	<tr><td><a class="button watch{{.WatchStatus}}" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
+	<tr><td><a class="button title watch{{.WatchStatus}}" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
 	{{end}}
 </table>
 {{template "footer"}}
@@ -68,9 +77,9 @@ and enter the code:<br>
 {{template "header"}}
 <table>
 	{{range .List}}
-	<tr><td><a class="button watch0" href="/play/?lid={{.ID}}">{{.Name}}</a></td></tr>
+	<tr><td><a class="button watch0 title" href="/play/?lid={{.ID}}">{{.Name}}</a></td></tr>
 	{{end}}
-	<tr><td><a class="button blue" href="/">main</a></td></tr>
+	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
 {{template "footer"}}
 {{end}}
