@@ -345,6 +345,10 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 			}
 		}
 
+		if a.auth.AccessToken == "" {
+			a.auth = loadAuth()
+		}
+
 		a.deviceCode = r.URL.Query().Get("device_code")
 
 		log.Printf("request url: %s, a.auth: %+v", r.URL.String(), a.auth)
