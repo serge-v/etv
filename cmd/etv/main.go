@@ -10,6 +10,7 @@ import (
 var (
 	server      = flag.String("http", ":8099", "start server on `[ip]:port`")
 	showVersion = flag.Bool("version", false, "print version")
+	confURL     = flag.String("conf", "", "config server URL")
 )
 
 var version string

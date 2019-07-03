@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -84,6 +85,24 @@ func (a *api) fetch(u, cachePath string, d interface{}) error {
 	}
 	if err := json.Unmarshal(buf, d); err != nil {
 		return errors.Wrap(err, "fetch unmarshal")
+	}
+	if err := saveAuth(buf); err != nil {
+		return errors.Wrap(err, "save auth")
+	}
+	return nil
+}
+
+func saveAuth(b []byte) error {
+	if *confURL == "" {
+		return nil
+	}
+	u := *confURL + "/auth.json"
+	resp, err := http.Post(u, "application/json", bytes.NewReader(b))
+	if err != nil {
+		return errors.Wrap(err, "save auth")
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.Wrapf(err, "save auth %d", resp.StatusCode)
 	}
 	return nil
 }

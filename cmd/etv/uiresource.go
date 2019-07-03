@@ -31,18 +31,7 @@ const headerText  = `{{define "header"}}
 <meta name="viewport" content="width=device-width, maximum-scale=1, minimum-scale=1" />
 <style>
 table{ width:100%; }
-table.zebra tr:nth-child(even) { background-color: #E6E6E6; }
-.err tr:nth-child(4n) { background-color: #E6E6E6; }
-.err tr:nth-child(4n+1) { background-color: #E6E6E6; }
-th { background-color: lightsteelblue; }
 td { padding: 2px; }
-td.completed { background-color:transparent; }
-td.completed_with_errors { background-color: #DDDD88; }
-td.failed { background-color: #FF8888; }
-td.known_error { background-color:plum; }
-td.submitted { background-color:#8888FF; }
-td.processing { background-color:#BBBBFF; }
-td.aborted { background-color:darkgray; }
 .button {
     background-color: #4CAF50; /* Green */
     border: none;
@@ -56,6 +45,15 @@ td.aborted { background-color:darkgray; }
     width: 80%;
     height: 70px;
     display: block;
+}
+.error {
+	background-color: pink;
+	color: red;
+	font-size: 24px;
+}
+.title {
+	font-size: 16px;
+	padding: 4px 4px 4px 4px;
 }
 .watch0{
     background-color: #4CAF50; /* Green */
@@ -72,13 +70,11 @@ a:active {
 .blue {
 	background-color: #6C70BF;
 }
-.pre { width: 330px; white-space: pre-wrap; }
 .qfield { width: 330px; border: solid 2px #4CAF50; font-size: 32px; }
 </style>
 </head>
 <body>
 {{end}}
-
 `
 
 const playText  = `{{define "play"}}
@@ -115,6 +111,7 @@ const searchText  = `{{define "search"}}
 <table>
 	<tr><td><input class="qfield" type="text" name="q"></td></tr>
 	<tr><td><input class="button" type="submit" value="Search"></td></tr>
+	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
 </form>
 {{template "footer"}}
@@ -122,7 +119,16 @@ const searchText  = `{{define "search"}}
 
 `
 
-const uiText  = `{{define "main"}}
+const uiText  = `{{define "error"}}
+{{template "header"}}
+<table>
+	<tr><td><div class="button error">{{.Error}}</div></td></tr>
+	<tr><td><a class="button blue" href="/">Main</a></td></tr>
+</table>
+{{template "footer"}}
+{{end}}
+
+{{define "main"}}
 {{template "header"}}
 <table>
 	<tr><td><a class="button" href="/bookmarks">Bookmarks</a></td></tr>
@@ -157,7 +163,7 @@ and enter the code:<br>
 <h1>Bookmarks</h1>
 <table>
 	{{range .List}}
-	<tr><td><a class="button" href="/item/{{.ID}}">{{.ShortName}}<br>{{.OnAir}}</a></td></tr>
+	<tr><td><a class="button title" href="/item/{{.ID}}">{{.ShortName}}<br>{{.OnAir}}</a></td></tr>
 	{{end}}
 	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
@@ -168,7 +174,7 @@ and enter the code:<br>
 {{template "header"}}
 <table>
 	{{range .List}}
-	<tr><td><a class="button watch{{.WatchStatus}}" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
+	<tr><td><a class="button title watch{{.WatchStatus}}" href="/item/{{.ID}}">{{.ShortName}}<br>{{.ChildrenCount}}<br>{{.OnAir}}</a></td></tr>
 	{{end}}
 </table>
 {{template "footer"}}
@@ -192,9 +198,9 @@ and enter the code:<br>
 {{template "header"}}
 <table>
 	{{range .List}}
-	<tr><td><a class="button watch0" href="/play/?lid={{.ID}}">{{.Name}}</a></td></tr>
+	<tr><td><a class="button watch0 title" href="/play/?lid={{.ID}}">{{.Name}}</a></td></tr>
 	{{end}}
-	<tr><td><a class="button blue" href="/">main</a></td></tr>
+	<tr><td><a class="button blue" href="/">Main</a></td></tr>
 </table>
 {{template "footer"}}
 {{end}}

@@ -43,7 +43,7 @@ func (a *api) authorize() error {
 		"&scope=" + strings.Join(scope, "%20") +
 		"&grant_type=http%3A%2F%2Foauth.net%2Fgrant_type%2Fdevice%2F1.0" +
 		"&code=" + a.deviceCode
-	if err := a.fetch(u, "", &a.auth); err != nil {
+	if err := a.fetch(u, "auth.json", &a.auth); err != nil {
 		return err
 	}
 	a.deviceCode = ""
@@ -74,6 +74,9 @@ func (a *api) refreshToken() error {
 		return err
 	}
 	a.auth.Expires = time.Now().Add(time.Second * time.Duration(a.auth.ExpiresIn))
+	if err := saveAuth(buf); err != nil {
+		return err
+	}
 	log.Printf("refresh: %+v", a.auth)
 	return nil
 }

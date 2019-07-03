@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -47,11 +49,7 @@ func authorizeHandler(a *api, w http.ResponseWriter, r *http.Request) error {
 	if err := a.authorize(); err != nil {
 		return err
 	}
-	http.SetCookie(w, &http.Cookie{Name: "atoken", Value: a.auth.AccessToken, Path: "/"})
-	http.SetCookie(w, &http.Cookie{Name: "rtoken", Value: a.auth.RefreshToken, Path: "/"})
-	http.SetCookie(w, &http.Cookie{Name: "expires", Value: a.auth.Expires.Format(time.RFC3339), Path: "/"})
-	log.Printf("cookies saved: %+v", a.auth)
-	http.Redirect(w, r, "/cookies", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 	return nil
 }
 
@@ -183,11 +181,7 @@ func cookiesPage(a *api, w http.ResponseWriter, r *http.Request) error {
 		if err := a.refreshToken(); err != nil {
 			return errors.Wrap(err, "cookiesPage")
 		}
-		http.SetCookie(w, &http.Cookie{Name: "atoken", Value: a.auth.AccessToken, Path: "/"})
-		http.SetCookie(w, &http.Cookie{Name: "rtoken", Value: a.auth.RefreshToken, Path: "/"})
-		http.SetCookie(w, &http.Cookie{Name: "expires", Value: a.auth.Expires.Format(time.RFC3339), Path: "/"})
-		log.Printf("cookies saved: %+v", a.auth)
-		http.Redirect(w, r, "/cookies", http.StatusFound)
+		http.Redirect(w, r, "/", http.StatusFound)
 		return nil
 	}
 
@@ -311,6 +305,35 @@ var funcs = template.FuncMap{
 
 var uiT = template.New("")
 
+func loadAuth() authorizationResp {
+	var auth authorizationResp
+
+	authURL := *confURL + "/auth.json"
+	resp, err := http.Get(authURL)
+	if err != nil {
+		log.Println(err)
+		return auth
+	}
+	if resp.StatusCode != http.StatusOK {
+		log.Println("status code", resp.StatusCode)
+		return auth
+	}
+	defer resp.Body.Close()
+	buf, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		return auth
+	}
+
+	if err := json.Unmarshal(buf, &auth); err != nil {
+		log.Println(err)
+		return auth
+	}
+	auth.Expires = time.Now().Add(time.Duration(auth.ExpiresIn) * time.Second)
+	log.Printf("auth loaded: %+v", &auth)
+	return auth
+}
+
 func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		if version == "" {
@@ -322,27 +345,7 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 			}
 		}
 
-		var auth authorizationResp
-		var a api
-
-		cookie, err := r.Cookie("atoken")
-		if err == nil {
-			auth.AccessToken = cookie.Value
-		}
-		cookie, err = r.Cookie("rtoken")
-		if err == nil {
-			auth.RefreshToken = cookie.Value
-		}
-		cookie, err = r.Cookie("expires")
-		if err == nil {
-			t, err := time.Parse(time.RFC3339, cookie.Value)
-			if err != nil {
-				auth.Expires = t
-			}
-		}
-
 		a.deviceCode = r.URL.Query().Get("device_code")
-		a.auth = auth
 
 		log.Printf("request url: %s, a.auth: %+v", r.URL.String(), a.auth)
 		log.Printf("request handler: %T", h)
@@ -375,8 +378,12 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "/tmp/log")
 }
 
+var a api
+
 func runServer() error {
 	player = newPlayer()
+	a.auth = loadAuth()
+
 	http.Handle("/", errorHandler(mainPage))
 	http.HandleFunc("/favicon.ico", faviconHandler)
 	http.Handle("/bookmarks/", errorHandler(bookmarksPage))
