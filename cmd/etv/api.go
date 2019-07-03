@@ -86,9 +86,13 @@ func (a *api) fetch(u, cachePath string, d interface{}) error {
 	if err := json.Unmarshal(buf, d); err != nil {
 		return errors.Wrap(err, "fetch unmarshal")
 	}
-	if err := saveAuth(buf); err != nil {
-		return errors.Wrap(err, "save auth")
+
+	if cachePath == "auth.json" {
+		if err := saveAuth(buf); err != nil {
+			return errors.Wrap(err, "save auth")
+		}
 	}
+
 	return nil
 }
 
