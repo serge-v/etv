@@ -5,6 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"os/exec"
+	"time"
 )
 
 var (
@@ -15,11 +18,30 @@ var (
 
 var version string
 
+func weatherLoop() {
+	printWeather()
+	tick := time.NewTicker(time.Minute * 10)
+	for range tick.C {
+		printWeather()
+	}
+}
+
+func printWeather() {
+	cmd := exec.Command("curl", "wttr.in?m")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Run()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
 func processArgs() (err error) {
 	switch {
 	case *showVersion:
 		fmt.Println(version)
 	default:
+		go weatherLoop()
 		return runServer()
 	}
 	return nil

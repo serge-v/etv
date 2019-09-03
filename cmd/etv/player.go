@@ -114,7 +114,6 @@ func (p *videoPlayer) seek(d int) {
 	case "mplayer":
 		p.sendPipeCommand(fmt.Sprintf("seek %d", d))
 	}
-
 }
 
 func (p *videoPlayer) volume(d int) {
