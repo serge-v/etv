@@ -61,31 +61,31 @@ type Folder struct {
 type Folders struct {
 	Base
 	Data struct {
-		Folders    []Folder   `json:"folders"`
-		Pagination Pagination `json:"pagination"`
+		Folders []Folder `json:"folders"`
+		//		Pagination Pagination `json:"pagination"`
 	} `json:"data"`
 }
 
 // Child is a object or container.
 type Child struct {
-	Channel struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
-	} `json:"channel"`
+	//	Channel struct {
+	//		ID   int64  `json:"id"`
+	//		Name string `json:"name"`
+	//	} `json:"channel"`
 	ChildrenCount int64  `json:"children_count"`
 	Country       string `json:"country"`
 	Description   string `json:"description"`
 	Duration      int64  `json:"duration"`
-	Files         []struct {
-		Bitrate int64  `json:"bitrate"`
-		Format  string `json:"format"`
-	} `json:"files"`
+	//	Files         []struct {
+	//		Bitrate int64  `json:"bitrate"`
+	//		Format  string `json:"format"`
+	//	} `json:"files"`
 	ID   int64 `json:"id"`
 	IsHd bool  `json:"is_hd"`
-	Mark struct {
-		Count int64 `json:"count"`
-		Total int64 `json:"total"`
-	} `json:"mark"`
+	//	Mark struct {
+	//		Count int64 `json:"count"`
+	//		Total int64 `json:"total"`
+	//	} `json:"mark"`
 	Name         string      `json:"name"`
 	OnAir        string      `json:"on_air"`
 	Parent       int64       `json:"parent"`

@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -15,8 +14,6 @@ import (
 
 	"github.com/pkg/errors"
 )
-
-const stampZ = "2006-01-02 15:04:05Z"
 
 func mainPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	d := struct {
@@ -286,23 +283,6 @@ func channelsPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-var funcs = template.FuncMap{
-	"nozero": func(n int) string {
-		if n == 0 {
-			return ""
-		}
-		if n < 1000 {
-			return fmt.Sprintf("%d", n)
-		} else if n < 1000000 {
-			return fmt.Sprintf("%d,%03d", n/1000, n%1000)
-		} else if n < 1000000000 {
-			return fmt.Sprintf("%d,%03d,%03d", n/1000000, n%1000000/1000, n%1000)
-		} else {
-			return fmt.Sprintf("%d,%03d,%03d,%03d", n/1000000000, n%1000000000/1000000, n%1000000/1000, n%1000)
-		}
-	},
-}
-
 var uiT = template.New("")
 
 func loadAuth() authorizationResp {
@@ -356,8 +336,10 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 		if err := h(&a, w, r); err != nil {
 			log.Printf("request error: %+v", err)
 			if err == errInvalidGrant {
-				activatePage(&a, w, r)
-				return
+				err = activatePage(&a, w, r)
+				if err == nil {
+					return
+				}
 			}
 			d := struct {
 				Error string

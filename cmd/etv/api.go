@@ -230,12 +230,6 @@ func (a *api) getArchive(page int) (*Media, error) {
 	return &resp, nil
 }
 
-func (a *api) getChild(id int64) Child {
-	lock.Lock()
-	defer lock.Unlock()
-	return mobjects[id]
-}
-
 func (a *api) getStreamURL(id int64) (string, error) {
 	u := fmt.Sprintf("%svideo/media/%d/watch.json?format=%s&protocol=hls&bitrate=%d&access_token=%s", apiRoot, id, "mp4", bitrate, a.auth.AccessToken)
 	var resp StreamURL
