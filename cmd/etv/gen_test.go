@@ -23,7 +23,7 @@ func Generate() {
 	}
 	fmt.Fprintln(f, header)
 
-	files, err := filepath.Glob("templates/*.tmpl")
+	files, err := filepath.Glob("templates/*.html")
 	if err != nil {
 		panic(err)
 	}
@@ -33,13 +33,13 @@ func Generate() {
 		if err != nil {
 			panic(err)
 		}
-		base := strings.Replace(filepath.Base(fname), ".html.tmpl", "", 1)
+		base := strings.Replace(filepath.Base(fname), ".html", "", 1)
 		fmt.Fprintf(f, "\nconst %sText  = `%s`\n", base, string(text))
 	}
 
 	fmt.Fprintln(f, "func init() {")
 	for _, fname := range files {
-		base := strings.Replace(filepath.Base(fname), ".html.tmpl", "", 1)
+		base := strings.Replace(filepath.Base(fname), ".html", "", 1)
 		fmt.Fprintf(f, `	uiT  = template.Must(uiT.New("%s").Parse(%sText))`, base, base)
 		fmt.Fprintln(f)
 	}
