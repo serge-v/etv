@@ -102,5 +102,6 @@ func deploy() {
 	}
 	dst := strings.TrimSpace(string(buf))
 	run("scp", "etv", dst+":/tmp/etv.new")
-	runterm("ssh", "-t", dst, "su", "-c", `"./writeenable.sh; cp /tmp/etv.new etv; ./etv -version; reboot"`)
+	run("scp", "dbuscontrol.sh", dst+":/tmp/dbuscontrol.sh")
+	runterm("ssh", "-t", dst, "su", "-c", `"./writeenable.sh; cp /tmp/etv.new etv; cp /tmp/dbuscontrol.sh dbuscontrol.sh; ./etv -version; reboot"`)
 }

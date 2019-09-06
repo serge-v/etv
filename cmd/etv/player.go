@@ -13,11 +13,12 @@ import (
 )
 
 type videoPlayer struct {
-	pid      int            // process id
-	cmd      string         // depending on platform can be mplayer, omxplayer or vlc
-	args     []string       // default player startup parameters
-	fifoName string         // mplayer control pipe
-	stdin    io.WriteCloser // stdin pipe for controlling omxplayer
+	pid        int            // process id
+	cmd        string         // depending on platform can be mplayer, omxplayer or vlc
+	args       []string       // default player startup parameters
+	fifoName   string         // mplayer control pipe
+	stdin      io.WriteCloser // stdin pipe for controlling omxplayer
+	windowMode bool
 }
 
 func newPlayer() *videoPlayer {
@@ -58,6 +59,24 @@ func (p *videoPlayer) stop() error {
 		log.Println("kill signal sent")
 		return err
 	}
+	return nil
+}
+
+func (p *videoPlayer) toggleWindow() error {
+	args := []string{"-c", "dbuscontrol.sh", "setvideopos"}
+	if p.windowMode {
+		args = append(args, []string{"1440", "810", "480", "270"}...)
+	} else {
+		args = append(args, []string{"0", "0", "1920", "1080"}...)
+	}
+	cmd := exec.Command("sh", args...)
+	buf, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Println(string(buf))
+		return err
+	}
+	p.windowMode = !p.windowMode
+
 	return nil
 }
 
@@ -247,6 +266,10 @@ func playerHandler(a *api, w http.ResponseWriter, r *http.Request) error {
 			player.volume(n)
 		case "pause":
 			player.pause()
+		case "stop":
+			player.stop()
+		case "window":
+			player.toggleWindow()
 		}
 	}
 
