@@ -63,13 +63,13 @@ func (p *videoPlayer) stop() error {
 }
 
 func (p *videoPlayer) toggleWindow() error {
-	args := []string{"-c", "dbuscontrol.sh", "setvideopos"}
+	args := []string{"setvideopos"}
 	if p.windowMode {
-		args = append(args, []string{"1440", "810", "480", "270"}...)
+		args = append(args, []string{"1440", "810", "1920", "1080"}...)
 	} else {
 		args = append(args, []string{"0", "0", "1920", "1080"}...)
 	}
-	cmd := exec.Command("sh", args...)
+	cmd := exec.Command("./dbuscontrol.sh", args...)
 	buf, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Println(string(buf))
