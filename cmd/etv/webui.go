@@ -318,7 +318,7 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 	f := func(w http.ResponseWriter, r *http.Request) {
 		if version == "" {
 			var err error
-			uiT, err = template.New("").ParseGlob("templates/*.tmpl")
+			uiT, err = template.New("").ParseGlob("templates/*.html")
 			if err != nil {
 				log.Println(err)
 				return
@@ -368,6 +368,7 @@ var a api
 
 func runServer() error {
 	player = newPlayer()
+	ipcamPlayer = newPlayer()
 	a.auth = loadAuth()
 
 	http.Handle("/", errorHandler(mainPage))
@@ -382,9 +383,14 @@ func runServer() error {
 	http.Handle("/activate/", errorHandler(activatePage))
 	http.Handle("/authorize/", errorHandler(authorizeHandler))
 	http.Handle("/play/", errorHandler(playerHandler))
+	http.Handle("/ipcam/", errorHandler(ipcamHandler))
 	http.HandleFunc("/log", logHandler)
 	http.Handle("/local/", errorHandler(localPage))
 	http.Handle("/cookies", errorHandler(cookiesPage))
-	log.Println("serving on http://localhost" + *server)
+	if strings.HasPrefix(*server, ":") {
+		log.Println("serving on http://localhost" + *server)
+	} else {
+		log.Println("serving on http://" + *server)
+	}
 	return http.ListenAndServe(*server, nil)
 }

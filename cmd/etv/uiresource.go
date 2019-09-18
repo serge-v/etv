@@ -77,6 +77,37 @@ a:active {
 {{end}}
 `
 
+const ipcamText  = `{{define "ipcam"}}
+{{template "header"}}
+<table>
+        {{if .Error}}
+        <tr><td style="color: red">ERROR: {{.Error}}</td><tr>
+        {{end}}
+        <tr>
+	        <td><a href="/" class="button blue">Main</a></td>
+	        <td><a href="/ipcam?cmd=move&arg=full" class="button blue">Full</a></td>
+        </tr>
+        <tr>
+	        <td><a href="/ipcam?cmd=move&arg=nw" class="button blue">NW</a></td>
+	        <td><a href="/ipcam?cmd=move&arg=sw" class="button blue">SW</a></td>
+        </tr>
+        <tr>
+	        <td><a href="/ipcam?cmd=move&arg=ne" class="button blue">NE</a></td>
+	        <td><a href="/ipcam?cmd=move&arg=se" class="button blue">SE</a></td>
+        </tr>
+        <tr>
+	        <td><a href="/ipcam?cmd=start" class="button blue">Start</a></td>
+	        <td><a href="/ipcam?cmd=stop" class="button blue">Stop</a></td>
+        </tr>
+        <tr>
+	        <td><a href="/ipcam?cmd=volume&arg=-10" class="button blue">Vol -</a></td>
+	        <td><a href="/ipcam?cmd=volume&arg=10" class="button blue">Vol +</a></td>
+        </tr>
+</table>
+{{template "footer"}}
+{{end}}
+`
+
 const playText  = `{{define "play"}}
 {{template "header"}}
 <table>
@@ -141,6 +172,7 @@ const uiText  = `{{define "error"}}
 	<tr><td><a class="button" href="/search">Search</a></td></tr>
 	<tr><td><a class="button" href="/local">Local</a></td></tr>
 	<tr><td><a class="button blue" href="/play/">Player</a></td></tr>
+	<tr><td><a class="button blue" href="/ipcam">IP Camera</a></td></tr>
 	<tr><td><a class="button blue" href="/log">Log</a></td></tr>
 	<tr><td><a class="button blue" href="/cookies">Cookies</a></td></tr>
 </table>
@@ -229,6 +261,7 @@ func init() {
 	uiT  = template.Must(uiT.New("channels").Parse(channelsText))
 	uiT  = template.Must(uiT.New("footer").Parse(footerText))
 	uiT  = template.Must(uiT.New("header").Parse(headerText))
+	uiT  = template.Must(uiT.New("ipcam").Parse(ipcamText))
 	uiT  = template.Must(uiT.New("play").Parse(playText))
 	uiT  = template.Must(uiT.New("search").Parse(searchText))
 	uiT  = template.Must(uiT.New("ui").Parse(uiText))

@@ -32,7 +32,7 @@ func printWeather() {
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
 	if err != nil {
-		log.Println(err)
+		log.Println("weather fetch error:", err)
 	}
 }
 

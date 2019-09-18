@@ -19,6 +19,7 @@ type videoPlayer struct {
 	fifoName   string         // mplayer control pipe
 	stdin      io.WriteCloser // stdin pipe for controlling omxplayer
 	windowMode bool
+	dbus       dbusControl
 }
 
 func newPlayer() *videoPlayer {
@@ -29,6 +30,7 @@ func newPlayer() *videoPlayer {
 	if user == "pi" || user == "alarm" {
 		p.cmd = "omxplayer"
 		p.args = []string{}
+		p.dbus.name = os.Getenv("USER")
 	} else if user == "odroid" {
 		p.cmd = "vlc"
 		p.args = []string{}
