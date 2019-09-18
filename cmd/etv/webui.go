@@ -367,8 +367,8 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 var a api
 
 func runServer() error {
-	player = newPlayer()
-	ipcamPlayer = newPlayer()
+	player = newPlayer("")
+	ipcamPlayer = newPlayer("ipcam")
 	a.auth = loadAuth()
 
 	http.Handle("/", errorHandler(mainPage))

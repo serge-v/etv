@@ -22,7 +22,7 @@ type videoPlayer struct {
 	dbus       dbusControl
 }
 
-func newPlayer() *videoPlayer {
+func newPlayer(name string) *videoPlayer {
 	p := &videoPlayer{}
 
 	// TODO: make selection based on platform
@@ -30,7 +30,11 @@ func newPlayer() *videoPlayer {
 	if user == "pi" || user == "alarm" {
 		p.cmd = "omxplayer"
 		p.args = []string{}
-		p.dbus.name = os.Getenv("USER")
+		if name != "" {
+			p.dbus.name = name
+		} else {
+			p.dbus.name = os.Getenv("USER")
+		}
 	} else if user == "odroid" {
 		p.cmd = "vlc"
 		p.args = []string{}
