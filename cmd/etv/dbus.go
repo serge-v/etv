@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -13,12 +14,23 @@ type dbusControl struct {
 func (b *dbusControl) send(args []string) (string, error) {
 	cmd := exec.Command("dbus-send", args...)
 	u := os.Getenv("USER")
-	cmd.Env = []string{
-		fmt.Sprintf(`DBUS_SESSION_BUS_ADDRESS="/tmp/omxplayerdbus.%s"`, u),
-		fmt.Sprintf(`DBUS_SESSION_BUS_PID="/tmp/omxplayerdbus.%s.pid"`, u),
-	}
 
-	buf, err := cmd.CombinedOutput()
+	fname := fmt.Sprintf("/tmp/omxplayerdbus.%s", u)
+	buf, err := ioutil.ReadFile(fname)
+	if err != nil {
+		return "", err
+	}
+	cmd.Env = append(cmd.Env, "DBUS_SESSION_BUS_ADDRESS="+string(buf))
+
+	fname = fmt.Sprintf("/tmp/omxplayerdbus.%s.pid", u)
+	buf, err = ioutil.ReadFile(fname)
+	if err != nil {
+		return "", err
+	}
+	cmd.Env = append(cmd.Env, "DBUS_SESSION_BUS_PID="+string(buf))
+	log.Printf("%v", cmd)
+
+	buf, err = cmd.CombinedOutput()
 	if err != nil {
 		return "", fmt.Errorf("%s: dbus-send: %s", err, string(buf))
 	}
