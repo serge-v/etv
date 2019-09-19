@@ -368,7 +368,7 @@ var a api
 
 func runServer() error {
 	player = newPlayer("")
-	ipcamPlayer = newPlayer("ipcam")
+	ipcamPlayer = newPlayer("omxplayer1")
 	a.auth = loadAuth()
 
 	http.Handle("/", errorHandler(mainPage))

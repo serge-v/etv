@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
 )
 
@@ -12,9 +13,10 @@ type dbusControl struct {
 
 func (b *dbusControl) send(args []string) (string, error) {
 	cmd := exec.Command("dbus-send", args...)
+	u := os.Getenv("USER")
 	cmd.Env = []string{
-		fmt.Sprintf(`DBUS_SESSION_BUS_ADDRESS="/tmp/omxplayerdbus.%s"`, b.name),
-		fmt.Sprintf(`DBUS_SESSION_BUS_PID="/tmp/omxplayerdbus.%s.pid"`, b.name),
+		fmt.Sprintf(`DBUS_SESSION_BUS_ADDRESS="/tmp/omxplayerdbus.%s"`, u),
+		fmt.Sprintf(`DBUS_SESSION_BUS_PID="/tmp/omxplayerdbus.%s.pid"`, u),
 	}
 
 	buf, err := cmd.CombinedOutput()
@@ -30,7 +32,7 @@ func (b *dbusControl) status(arg string) (string, error) {
 		"--print-reply=literal",
 		"--session",
 		"--reply-timeout=500",
-		"--dest=org.mpris.MediaPlayer2.omxplayer",
+		"--dest=org.mpris.MediaPlayer2.omxplayer1",
 		"/org/mpris/MediaPlayer2",
 		"org.freedesktop.DBus.Properties.Get",
 		`string:"org.mpris.MediaPlayer2.Player"`,
@@ -47,7 +49,7 @@ func (b *dbusControl) setVideoPos(x1, y1, x2, y2 int) {
 	args := []string{
 		"--print-reply=literal",
 		"--session",
-		"--dest=org.mpris.MediaPlayer2.omxplayer",
+		"--dest=org.mpris.MediaPlayer2.omxplayer1",
 		"/org/mpris/MediaPlayer2",
 		"org.mpris.MediaPlayer2.Player.VideoPos",
 		"objpath:/not/used",

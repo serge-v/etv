@@ -101,7 +101,10 @@ func deploy() {
 		log.Fatal(err)
 	}
 	dst := strings.TrimSpace(string(buf))
+	log.Println("scp etv")
 	run("scp", "etv", dst+":/tmp/etv.new")
+	log.Println("scp dbuscontrol.sh")
 	run("scp", "dbuscontrol.sh", dst+":/tmp/dbuscontrol.sh")
-	runterm("ssh", "-t", dst, "su", "-c", `"./writeenable.sh; cp /tmp/etv.new etv; cp /tmp/dbuscontrol.sh dbuscontrol.sh; ./etv -version; reboot"`)
+	log.Println("installing")
+	runterm("ssh", "-t", dst, "su", "-c", `"set -x; ./writeenable.sh; cp /tmp/etv.new etv; cp /tmp/dbuscontrol.sh dbuscontrol.sh; ./etv -version; reboot"`)
 }
