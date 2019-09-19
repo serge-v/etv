@@ -24,6 +24,8 @@ func setPlayerPos(player *videoPlayer, arg string) {
 		player.dbus.setVideoPos(1440, 0, 1920, 810)
 	case "se":
 		player.dbus.setVideoPos(1440, 810, 1920, 1080)
+	case "full":
+		player.dbus.setVideoPos(0, 0, 1920, 1080)
 	}
 	log.Println("setPlayerPos", arg)
 }
