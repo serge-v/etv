@@ -314,7 +314,7 @@ func loadAuth() authorizationResp {
 	return auth
 }
 
-func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) http.Handler {
+func etvHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) http.Handler {
 	f := func(w http.ResponseWriter, r *http.Request) {
 		if version == "" {
 			var err error
@@ -360,6 +360,38 @@ func errorHandler(h func(a *api, w http.ResponseWriter, r *http.Request) error) 
 	return http.HandlerFunc(f)
 }
 
+func errorHandler(h func(w http.ResponseWriter, r *http.Request) error) http.Handler {
+	f := func(w http.ResponseWriter, r *http.Request) {
+		if version == "" {
+			var err error
+			uiT, err = template.New("").ParseGlob("templates/*.html")
+			if err != nil {
+				log.Println(err)
+				return
+			}
+		}
+
+		if err := h(w, r); err != nil {
+			log.Printf("request error: %+v", err)
+			d := struct {
+				Error string
+			}{
+				Error: err.Error(),
+			}
+
+			if err := uiT.ExecuteTemplate(w, "error", d); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Println(err)
+				return
+			}
+			return
+		}
+		log.Printf("request done")
+
+	}
+	return http.HandlerFunc(f)
+}
+
 func logHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "/tmp/log")
 }
@@ -367,26 +399,26 @@ func logHandler(w http.ResponseWriter, r *http.Request) {
 var a api
 
 func runServer() error {
-	player = newPlayer("")
-	ipcamPlayer = newPlayer("omxplayer1")
+	player = newPlayer("", 20)
+	ipcamPlayer = newPlayer("omxplayer1", 10)
 	a.auth = loadAuth()
 
-	http.Handle("/", errorHandler(mainPage))
+	http.Handle("/", etvHandler(mainPage))
 	http.HandleFunc("/favicon.ico", faviconHandler)
-	http.Handle("/bookmarks/", errorHandler(bookmarksPage))
-	http.Handle("/history/", errorHandler(historyPage))
-	http.Handle("/channels/", errorHandler(channelsPage))
-	http.Handle("/channel/", errorHandler(channelPage))
-	http.Handle("/search/", errorHandler(searchPage))
-	http.Handle("/archive/", errorHandler(archivePage))
-	http.Handle("/item/", errorHandler(itemsPage))
-	http.Handle("/activate/", errorHandler(activatePage))
-	http.Handle("/authorize/", errorHandler(authorizeHandler))
-	http.Handle("/play/", errorHandler(playerHandler))
+	http.Handle("/bookmarks/", etvHandler(bookmarksPage))
+	http.Handle("/history/", etvHandler(historyPage))
+	http.Handle("/channels/", etvHandler(channelsPage))
+	http.Handle("/channel/", etvHandler(channelPage))
+	http.Handle("/search/", etvHandler(searchPage))
+	http.Handle("/archive/", etvHandler(archivePage))
+	http.Handle("/item/", etvHandler(itemsPage))
+	http.Handle("/activate/", etvHandler(activatePage))
+	http.Handle("/authorize/", etvHandler(authorizeHandler))
+	http.Handle("/play/", etvHandler(playerHandler))
 	http.Handle("/ipcam/", errorHandler(ipcamHandler))
 	http.HandleFunc("/log", logHandler)
-	http.Handle("/local/", errorHandler(localPage))
-	http.Handle("/cookies", errorHandler(cookiesPage))
+	http.Handle("/local/", etvHandler(localPage))
+	http.Handle("/cookies", etvHandler(cookiesPage))
 	if strings.HasPrefix(*server, ":") {
 		log.Println("serving on http://localhost" + *server)
 	} else {

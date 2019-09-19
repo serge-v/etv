@@ -8,7 +8,7 @@ import (
 
 var ipcamPlayer *videoPlayer
 
-func ipcamHandler(_ *api, w http.ResponseWriter, r *http.Request) error {
+func ipcamHandler(w http.ResponseWriter, r *http.Request) error {
 	return handleIPCamRequests(ipcamPlayer, w, r)
 }
 
@@ -39,21 +39,19 @@ func handleIPCamRequests(player *videoPlayer, w http.ResponseWriter, r *http.Req
 	command := r.URL.Query().Get("cmd")
 	arg := r.URL.Query().Get("arg")
 
-	if player.pid > 0 {
-		switch command {
-		case "volume":
-			n, _ := strconv.Atoi(arg)
-			player.volume(n)
-		case "stop":
-			player.stop()
-		case "move":
-			setPlayerPos(player, arg)
-		}
-	} else {
-		switch command {
-		case "start":
-			d.Error = player.start(camURL)
-		}
+	switch command {
+	case "volume":
+		n, _ := strconv.Atoi(arg)
+		player.volume(n)
+	case "move":
+		setPlayerPos(player, arg)
+	}
+
+	if player.pid > 0 && command == "stop" {
+		player.stop()
+	}
+	if player.pid == 0 && command == "start" {
+		d.Error = player.start(camURL)
 	}
 
 	if err := uiT.ExecuteTemplate(w, "ipcam", d); err != nil {

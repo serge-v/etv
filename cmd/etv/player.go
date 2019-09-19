@@ -22,7 +22,7 @@ type videoPlayer struct {
 	dbus       dbusControl
 }
 
-func newPlayer(name string) *videoPlayer {
+func newPlayer(name string, layer int) *videoPlayer {
 	p := &videoPlayer{}
 
 	// TODO: make selection based on platform
@@ -30,7 +30,10 @@ func newPlayer(name string) *videoPlayer {
 	if user == "pi" || user == "alarm" {
 		p.cmd = "omxplayer"
 		if name != "" {
-			p.args = []string{"--dbus_name", "org.mpris.MediaPlayer2." + name}
+			p.args = []string{
+				"--dbus_name", "org.mpris.MediaPlayer2." + name,
+				"--layer", strconv.Itoa(layer),
+			}
 		} else {
 			p.args = []string{}
 		}
@@ -58,7 +61,7 @@ func newPlayer(name string) *videoPlayer {
 func (p *videoPlayer) stop() error {
 	log.Println("player pid:", p.pid)
 	if p.pid > 0 {
-		cmd := exec.Command("pkill", p.cmd)
+		cmd := exec.Command("kill", strconv.Itoa(p.pid))
 		err := cmd.Run()
 		time.Sleep(time.Second)
 		log.Println("kill signal sent")

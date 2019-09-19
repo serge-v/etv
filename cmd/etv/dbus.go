@@ -29,7 +29,7 @@ func (b *dbusControl) send(args []string) (string, error) {
 		return "", err
 	}
 	cmd.Env = append(cmd.Env, "DBUS_SESSION_BUS_PID="+strings.TrimSpace(string(buf)))
-	log.Printf("%v", cmd)
+	log.Printf("start omxplayer: %+v", cmd)
 
 	buf, err = cmd.CombinedOutput()
 	if err != nil {
@@ -69,7 +69,8 @@ func (b *dbusControl) setVideoPos(x1, y1, x2, y2 int) {
 	}
 	s, err := b.send(args)
 	if err != nil {
-		log.Println("setVideoPos", err, s)
+		log.Println("setVideoPos error:", err, s)
+		return
 	}
 	log.Println("setVideoPos", s)
 }
