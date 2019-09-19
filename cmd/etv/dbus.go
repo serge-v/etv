@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 )
 
 type dbusControl struct {
@@ -20,14 +21,14 @@ func (b *dbusControl) send(args []string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	cmd.Env = append(cmd.Env, "DBUS_SESSION_BUS_ADDRESS="+string(buf))
+	cmd.Env = append(cmd.Env, "DBUS_SESSION_BUS_ADDRESS="+strings.TrimSpace(string(buf)))
 
 	fname = fmt.Sprintf("/tmp/omxplayerdbus.%s.pid", u)
 	buf, err = ioutil.ReadFile(fname)
 	if err != nil {
 		return "", err
 	}
-	cmd.Env = append(cmd.Env, "DBUS_SESSION_BUS_PID="+string(buf))
+	cmd.Env = append(cmd.Env, "DBUS_SESSION_BUS_PID="+strings.TrimSpace(string(buf)))
 	log.Printf("%v", cmd)
 
 	buf, err = cmd.CombinedOutput()
