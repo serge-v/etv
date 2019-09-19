@@ -31,10 +31,8 @@ func newPlayer(name string) *videoPlayer {
 		p.cmd = "omxplayer"
 		if name != "" {
 			p.args = []string{"--dbus_name", "org.mpris.MediaPlayer2." + name}
-			p.dbus.name = name
 		} else {
 			p.args = []string{}
-			p.dbus.name = os.Getenv("USER")
 		}
 	} else if user == "odroid" {
 		p.cmd = "vlc"
