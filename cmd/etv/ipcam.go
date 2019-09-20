@@ -21,7 +21,7 @@ func setPlayerPos(player *videoPlayer, arg string) {
 	case "sw":
 		player.dbus.setVideoPos(0, 540, 960, 1080)
 	case "ne":
-		player.dbus.setVideoPos(0, 0, 960, 540)
+		player.dbus.setVideoPos(960, 0, 1920, 540)
 	case "se":
 		player.dbus.setVideoPos(960, 540, 1920, 1080)
 	case "full":

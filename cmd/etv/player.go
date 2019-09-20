@@ -71,11 +71,11 @@ func (p *videoPlayer) toggleWindow() error {
 	case 0:
 		args = append(args, []string{"0", "0", "1920", "1080"}...) // full
 	case 1:
-		args = append(args, []string{"0", "0", "480", "320"}...) // lt
+		args = append(args, []string{"0", "0", "480", "270"}...) // lt
 	case 2:
-		args = append(args, []string{"0", "760", "480", "1080"}...) // lb
+		args = append(args, []string{"0", "810", "480", "1080"}...) // lb
 	case 3:
-		args = append(args, []string{"1440", "0", "1920", "320"}...) // rt
+		args = append(args, []string{"1440", "0", "1920", "270"}...) // rt
 	case 4:
 		args = append(args, []string{"1440", "810", "1920", "1080"}...) // rb
 	}
