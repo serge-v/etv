@@ -54,6 +54,9 @@ func handleIPCamRequests(player *videoPlayer, w http.ResponseWriter, r *http.Req
 		d.Error = player.start(camURL)
 	}
 
+	st, err := player.dbus.status()
+	log.Println(st, err)
+
 	if err := uiT.ExecuteTemplate(w, "ipcam", d); err != nil {
 		return err
 	}

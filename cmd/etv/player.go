@@ -18,7 +18,7 @@ type videoPlayer struct {
 	args       []string       // default player startup parameters
 	fifoName   string         // mplayer control pipe
 	stdin      io.WriteCloser // stdin pipe for controlling omxplayer
-	windowMode bool
+	windowMode int
 	dbus       dbusControl
 }
 
@@ -59,23 +59,29 @@ func newPlayer(name string, layer int) *videoPlayer {
 }
 
 func (p *videoPlayer) stop() error {
-	log.Println("player pid:", p.pid)
-	if p.pid > 0 {
-		cmd := exec.Command("kill", strconv.Itoa(p.pid))
-		err := cmd.Run()
-		time.Sleep(time.Second)
-		log.Println("kill signal sent")
-		return err
-	}
+	p.sendStdinCommand("q")
+	time.Sleep(time.Second)
+	log.Println("quit sent to pid:", p.pid)
 	return nil
 }
 
 func (p *videoPlayer) toggleWindow() error {
 	args := []string{"setvideopos"}
-	if p.windowMode {
-		args = append(args, []string{"1440", "810", "1920", "1080"}...)
-	} else {
-		args = append(args, []string{"0", "0", "1920", "1080"}...)
+	p.windowMode++
+	if p.windowMode > 4 {
+		p.windowMode = 0
+	}
+	switch p.windowMode {
+	case 0:
+		args = append(args, []string{"0", "0", "1920", "1080"}...) // full
+	case 1:
+		args = append(args, []string{"0", "0", "480", "320"}...) // lt
+	case 2:
+		args = append(args, []string{"0", "760", "480", "1080"}...) // lb
+	case 3:
+		args = append(args, []string{"1440", "0", "1920", "320"}...) // rt
+	case 4:
+		args = append(args, []string{"1440", "810", "1920", "1080"}...) // rb
 	}
 	cmd := exec.Command("./dbuscontrol.sh", args...)
 	buf, err := cmd.CombinedOutput()
@@ -83,7 +89,6 @@ func (p *videoPlayer) toggleWindow() error {
 		log.Println(string(buf))
 		return err
 	}
-	p.windowMode = !p.windowMode
 
 	return nil
 }

@@ -39,7 +39,7 @@ func (b *dbusControl) send(args []string) (string, error) {
 	return string(buf), nil
 }
 
-func (b *dbusControl) status(arg string) (string, error) {
+func (b *dbusControl) status() (string, error) {
 	args := []string{
 		"--print-reply=literal",
 		"--session",
