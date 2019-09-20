@@ -29,13 +29,9 @@ func newPlayer(name string, layer int) *videoPlayer {
 	user := os.Getenv("USER")
 	if user == "pi" || user == "alarm" {
 		p.cmd = "omxplayer"
+		p.args = []string{"--layer", strconv.Itoa(layer)}
 		if name != "" {
-			p.args = []string{
-				"--dbus_name", "org.mpris.MediaPlayer2." + name,
-				"--layer", strconv.Itoa(layer),
-			}
-		} else {
-			p.args = []string{}
+			p.args = append(p.args, []string{"--dbus_name", "org.mpris.MediaPlayer2." + name}...)
 		}
 	} else if user == "odroid" {
 		p.cmd = "vlc"
