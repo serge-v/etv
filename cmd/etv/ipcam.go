@@ -17,13 +17,13 @@ const camURL = "rtsp://192.168.1.203/11"
 func setPlayerPos(player *videoPlayer, arg string) {
 	switch arg {
 	case "nw":
-		player.dbus.setVideoPos(0, 0, 1440, 810)
+		player.dbus.setVideoPos(0, 0, 960, 540)
 	case "sw":
-		player.dbus.setVideoPos(0, 810, 1440, 1080)
+		player.dbus.setVideoPos(0, 540, 960, 1080)
 	case "ne":
-		player.dbus.setVideoPos(1440, 0, 1920, 810)
+		player.dbus.setVideoPos(0, 0, 960, 540)
 	case "se":
-		player.dbus.setVideoPos(1440, 810, 1920, 1080)
+		player.dbus.setVideoPos(960, 540, 1920, 1080)
 	case "full":
 		player.dbus.setVideoPos(0, 0, 1920, 1080)
 	}

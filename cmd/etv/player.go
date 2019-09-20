@@ -185,6 +185,10 @@ func (p *videoPlayer) sendPipeCommand(s string) {
 
 func (p *videoPlayer) sendStdinCommand(s string) {
 	log.Println("stdin command:", s)
+	if p.stdin == nil {
+		log.Println("player not started")
+		return
+	}
 	if _, err := fmt.Fprint(p.stdin, s); err != nil {
 		log.Println("stdin command error:", err.Error())
 	}

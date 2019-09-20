@@ -47,8 +47,8 @@ func (b *dbusControl) status() (string, error) {
 		"--dest=org.mpris.MediaPlayer2.omxplayer1",
 		"/org/mpris/MediaPlayer2",
 		"org.freedesktop.DBus.Properties.Get",
-		`string:"org.mpris.MediaPlayer2.Player"`,
-		`string:"PlaybackStatus"`,
+		"string:org.mpris.MediaPlayer2.Player",
+		"string:PlaybackStatus",
 	}
 	s, err := b.send(args)
 	if err != nil {
@@ -65,7 +65,7 @@ func (b *dbusControl) setVideoPos(x1, y1, x2, y2 int) {
 		"/org/mpris/MediaPlayer2",
 		"org.mpris.MediaPlayer2.Player.VideoPos",
 		"objpath:/not/used",
-		fmt.Sprintf(`string:"%d %d %d %d"`, x1, y1, x2, y2),
+		fmt.Sprintf("string:%d %d %d %d", x1, y1, x2, y2),
 	}
 	s, err := b.send(args)
 	if err != nil {

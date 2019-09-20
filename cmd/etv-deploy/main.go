@@ -102,7 +102,7 @@ func deploy() {
 	}
 	dst := strings.TrimSpace(string(buf))
 	log.Println("scp etv")
-	run("scp", "etv", dst+":/tmp/etv.new")
+	run("scp", "-v", "etv", dst+":/tmp/etv.new")
 	log.Println("scp dbuscontrol.sh")
 	run("scp", "dbuscontrol.sh", dst+":/tmp/dbuscontrol.sh")
 	log.Println("installing")
