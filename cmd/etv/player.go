@@ -22,7 +22,7 @@ type videoPlayer struct {
 	dbus       dbusControl
 }
 
-func newPlayer(name string, layer int) *videoPlayer {
+func newPlayer(name string, layer int, live bool) *videoPlayer {
 	p := &videoPlayer{}
 
 	// TODO: make selection based on platform
@@ -30,8 +30,11 @@ func newPlayer(name string, layer int) *videoPlayer {
 	if user == "pi" || user == "alarm" {
 		p.cmd = "omxplayer"
 		p.args = []string{"--layer", strconv.Itoa(layer)}
+		if live {
+			p.args = append(p.args, "--live", "--video_queue", "1")
+		}
 		if name != "" {
-			p.args = append(p.args, []string{"--dbus_name", "org.mpris.MediaPlayer2." + name}...)
+			p.args = append(p.args, "--dbus_name", "org.mpris.MediaPlayer2."+name)
 		}
 	} else if user == "odroid" {
 		p.cmd = "vlc"

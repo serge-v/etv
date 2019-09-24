@@ -89,10 +89,10 @@ const ipcamText  = `{{define "ipcam"}}
         </tr>
         <tr>
 	        <td><a href="/ipcam?cmd=move&arg=nw" class="button blue">NW</a></td>
-	        <td><a href="/ipcam?cmd=move&arg=sw" class="button blue">SW</a></td>
+	        <td><a href="/ipcam?cmd=move&arg=ne" class="button blue">NE</a></td>
         </tr>
         <tr>
-	        <td><a href="/ipcam?cmd=move&arg=ne" class="button blue">NE</a></td>
+	        <td><a href="/ipcam?cmd=move&arg=sw" class="button blue">SW</a></td>
 	        <td><a href="/ipcam?cmd=move&arg=se" class="button blue">SE</a></td>
         </tr>
         <tr>
