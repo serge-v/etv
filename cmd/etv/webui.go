@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -11,8 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 func mainPage(a *api, w http.ResponseWriter, r *http.Request) error {
@@ -176,7 +176,7 @@ func cookiesPage(a *api, w http.ResponseWriter, r *http.Request) error {
 	refresh := r.URL.Query().Get("refresh")
 	if refresh == "1" {
 		if err := a.refreshToken(); err != nil {
-			return errors.Wrap(err, "cookiesPage")
+			return fmt.Errorf("cookiesPage: %w", err)
 		}
 		http.Redirect(w, r, "/", http.StatusFound)
 		return nil

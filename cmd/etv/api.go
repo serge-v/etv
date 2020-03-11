@@ -3,14 +3,13 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"sync"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -39,11 +38,11 @@ func getURL(u string) ([]byte, error) {
 	log.Println("getURL:", u)
 	resp, err := http.Get(u)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get url: %s", u)
+		return nil, fmt.Errorf("get url: %s, %w", u, err)
 	}
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Wrapf(err, "get url body: %s", u)
+		return nil, fmt.Errorf("get url body: %s, %w", u, err)
 	}
 	return buf, nil
 }
@@ -54,7 +53,7 @@ var errInvalidGrant = errors.New("invalid grant")
 func checkToken(buf []byte) error {
 	var base Base
 	if err := json.Unmarshal(buf, &base); err != nil {
-		return errors.Wrap(err, "check token")
+		return fmt.Errorf("check token: %w", err)
 	}
 	if base.Error == "invalid_token" {
 		return errInvalidToken
@@ -77,19 +76,19 @@ func (a *api) fetch(u, cachePath string, d interface{}) error {
 	buf, err := getURL(u)
 	if err != nil {
 		log.Println(err)
-		return errors.Wrapf(err, "fetch: %s", u)
+		return fmt.Errorf("fetch: %s, %w", u, err)
 	}
 	err = checkToken(buf)
 	if err != nil {
-		return errors.Wrap(err, "fetch")
+		return fmt.Errorf("fetch: %w", err)
 	}
 	if err := json.Unmarshal(buf, d); err != nil {
-		return errors.Wrap(err, "fetch unmarshal")
+		return fmt.Errorf("fetch unmarshal: %w", err)
 	}
 
 	if cachePath == "auth.json" {
 		if err := saveAuth(buf); err != nil {
-			return errors.Wrap(err, "save auth")
+			return fmt.Errorf("save auth: %w", err)
 		}
 	}
 
@@ -103,10 +102,10 @@ func saveAuth(b []byte) error {
 	u := *confURL + "/auth.json"
 	resp, err := http.Post(u, "application/json", bytes.NewReader(b))
 	if err != nil {
-		return errors.Wrap(err, "save auth")
+		return fmt.Errorf("save auth: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return errors.Wrapf(err, "save auth %d", resp.StatusCode)
+		return fmt.Errorf("save auth %d, %w", resp.StatusCode, err)
 	}
 	return nil
 }
@@ -118,7 +117,7 @@ func (a *api) getBookmarkFolder(folder int64) (*Bookmarks, error) {
 	u := fmt.Sprintf("%svideo/bookmarks/folders/%d/items.json?per_page=20&page=1&access_token=%s", apiRoot, folder, a.auth.AccessToken)
 	var resp Bookmarks
 	if err := a.fetch(u, "b1.json", &resp); err != nil {
-		return nil, errors.Wrapf(err, "bookmarks: %d", folder)
+		return nil, fmt.Errorf("bookmarks: %d, %w", folder, err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.New(resp.ErrorMessage)
