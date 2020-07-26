@@ -80,9 +80,6 @@ a:active {
 const ipcamText  = `{{define "ipcam"}}
 {{template "header"}}
 <table>
-        {{if .Error}}
-        <tr><td style="color: red">ERROR: {{.Error}}</td><tr>
-        {{end}}
         <tr>
 	        <td><a href="/" class="button blue">Main</a></td>
 	        <td><a href="/ipcam?cmd=move&arg=full" class="button blue">Full</a></td>
@@ -111,9 +108,6 @@ const ipcamText  = `{{define "ipcam"}}
 const playText  = `{{define "play"}}
 {{template "header"}}
 <table>
-        {{if .Error}}
-        <tr><td style="color: red">ERROR: {{.Error}}</td><tr>
-        {{end}}
         <tr>
 	        <td><a href="/" class="button blue">Main</a></td>
 	        <td><a href="/play?cmd=pause" class="button blue">Pause</a></td>

@@ -1,9 +1,6 @@
 {{define "ipcam"}}
 {{template "header"}}
 <table>
-        {{if .Error}}
-        <tr><td style="color: red">ERROR: {{.Error}}</td><tr>
-        {{end}}
         <tr>
 	        <td><a href="/" class="button blue">Main</a></td>
 	        <td><a href="/ipcam?cmd=move&arg=full" class="button blue">Full</a></td>

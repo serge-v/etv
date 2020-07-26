@@ -102,10 +102,10 @@ func saveAuth(b []byte) error {
 	u := *confURL + "/auth.json"
 	resp, err := http.Post(u, "application/json", bytes.NewReader(b))
 	if err != nil {
-		return fmt.Errorf("save auth: %w", err)
+		return fmt.Errorf("save auth1: %w", err)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("save auth %d, %w", resp.StatusCode, err)
+		return fmt.Errorf("save auth to %s %d", u, resp.StatusCode)
 	}
 	return nil
 }
